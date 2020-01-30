@@ -122,6 +122,9 @@ class PhonemeLM(nn.Module):
 
         self.to(self.device)
 
+        train_losses = []
+        assess_losses = []
+
         epochs = epochs if epochs is not None else self.epochs
         for epoch in range(1, epochs + 1):
             self.train()
@@ -147,10 +150,12 @@ class PhonemeLM(nn.Module):
                 )
 
             train_loss = self.evaluate(train_loader)
+            train_losses.append(train_loss)
             print(f'Epoch {epoch}: train loss: {train_loss:.4f}', end='')
 
             if assess_pronunciations is not None:
                 assess_loss = self.evaluate(assess_loader)
+                assess_losses.append(assess_loss)
                 print(f'\tassess loss: {assess_loss:.4f}', end='')
             print()
 
@@ -158,6 +163,7 @@ class PhonemeLM(nn.Module):
                 generated_pronunciation = ' '.join(self.generate(10, 1))
                 print('\t', generated_pronunciation)
 
+        return train_losses, assess_losses
 
     def evaluate(self, loader):
         self.eval()
