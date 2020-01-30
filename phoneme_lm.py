@@ -256,7 +256,7 @@ class PhonemeLM(nn.Module):
     @property
     def embeddings(self):
         """Return the embeddings as a NumPy array."""
-        return self.embedding.weight.cpu()detach().numpy()
+        return self.embedding.weight.cpu().detach().numpy()
 
 
 def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
