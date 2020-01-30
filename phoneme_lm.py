@@ -42,6 +42,7 @@ class PhonemeLM(nn.Module):
     Arguments to __init__:
     - phoneme_to_idx: a dict mapping phonemes (each a string in ARPABET) to ints.
     - idx_to_phoneme: a dict mapping ints to phonemes (each a string in ARPABET).
+    - rnn_type: a string indicating the type of RNN ('rnn', 'lstm', 'gru').
     - embedding_dimension: the length of each phoneme's embedding vector.
     - rnn_hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
     - device: 'cuda' or 'gpu'. Defaults to 'gpu' if available.
@@ -54,6 +55,7 @@ class PhonemeLM(nn.Module):
         self,
         phoneme_to_idx,
         idx_to_phoneme,
+        rnn_type,
         embedding_dimension,
         rnn_hidden_dimension,
         device=None,
@@ -80,7 +82,13 @@ class PhonemeLM(nn.Module):
 
         self.embedding = nn.Embedding(self.vocab_size, embedding_dimension)
 
-        self.rnn = nn.LSTM(
+        rnn_model = {
+            'rnn': nn.RNN,
+            'lstm': nn.LSTM,
+            'gru': nn.GRU,
+        }[rnn_type]
+
+        self.rnn = rnn_model(
             input_size=embedding_dimension,
             hidden_size=rnn_hidden_dimension,
             batch_first=True
@@ -112,13 +120,13 @@ class PhonemeLM(nn.Module):
         if assess_pronunciations is not None:
             assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
 
-        self.train()
         self.to(self.device)
 
         epochs = epochs if epochs is not None else self.epochs
         for epoch in range(1, epochs + 1):
+            self.train()
             train_epoch_loss = 0
-            for inputs, targets in train_loader:
+            for batch_num, (inputs, targets) in enumerate(train_loader, start=1):
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
 
@@ -129,7 +137,14 @@ class PhonemeLM(nn.Module):
                 loss.backward()
                 optimizer.step()
                 train_epoch_loss += loss.item()
-                print('Batch loss: {:.4f}'.format(loss.item()), end='\r')
+                print(
+                    'Batch {} of {}; loss: {:.4f}'.format(
+                        batch_num,
+                        len(train_loader),
+                        loss.item()
+                    ),
+                    end='\r'
+                )
 
             train_loss = self.evaluate(train_loader)
             print(f'Epoch {epoch}: train loss: {train_loss:.4f}', end='')
@@ -138,6 +153,11 @@ class PhonemeLM(nn.Module):
                 assess_loss = self.evaluate(assess_loader)
                 print(f'\tassess loss: {assess_loss:.4f}', end='')
             print()
+
+            for _ in range(5):
+                generated_pronunciation = ' '.join(self.generate(10, 1))
+                print('\t', generated_pronunciation)
+
 
     def evaluate(self, loader):
         self.eval()
@@ -152,7 +172,7 @@ class PhonemeLM(nn.Module):
                 outputs, hidden_states = self(inputs, hidden_state=None)
                 loss += criterion(outputs.permute(0, 2, 1), targets)
 
-        return loss / len(loader)
+        return (loss / len(loader)).item()
 
     def generate(self, max_length, temperature):
         """Generate a pronunciation.
