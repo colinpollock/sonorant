@@ -45,7 +45,7 @@ class PhonemeLM(nn.Module):
     - rnn_type: a string indicating the type of RNN ('rnn', 'lstm', 'gru').
     - embedding_dimension: the length of each phoneme's embedding vector.
     - rnn_hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
-    - device: 'cuda' or 'gpu'. Defaults to 'gpu' if available.
+    - device: 'cuda' or 'cpu'. Defaults to 'gpu' if available.
     - epochs: the number of epochs to train for. Note that this an argument to
       the model rather than the `fit` method so that it's easier to automate
       group all the hyperparameters in one place.
@@ -251,12 +251,12 @@ class PhonemeLM(nn.Module):
         self.eval()
         with torch.no_grad():
             phoneme_idx = self.phoneme_to_idx[phoneme]
-            return self.embedding(torch.LongTensor([phoneme_idx])).numpy()
+            return self.embedding(torch.LongTensor([phoneme_idx])).cpu().numpy()
 
     @property
     def embeddings(self):
         """Return the embeddings as a NumPy array."""
-        return self.embedding.weight.detach().numpy()
+        return self.embedding.weight.cpu()detach().numpy()
 
 
 def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
