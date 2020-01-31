@@ -68,7 +68,7 @@ class PhonemeLM(nn.Module):
         lr=1e-3,
         max_epochs=100,
         early_stopping_rounds=5,
-        dropout=0.5,
+        dropout=0,
         batch_size=256,
     ):
         super(PhonemeLM, self).__init__()
@@ -112,7 +112,7 @@ class PhonemeLM(nn.Module):
     def forward(self, inputs, hidden_state=None):
         inputs = inputs.to(self.device)
 
-        embedded = self.dropout(self.embedding(inputs))
+        embedded = self.embedding(inputs)
         rnn_output, new_hidden_state = self.rnn(embedded, hidden_state)
         rnn_output = self.dropout(rnn_output)
         return self.linear(rnn_output), new_hidden_state
