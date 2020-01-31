@@ -46,7 +46,8 @@ class PhonemeLM(nn.Module):
     - idx_to_phoneme: a dict mapping ints to phonemes (each a string in ARPABET).
     - rnn_type: a string indicating the type of RNN ('rnn', 'lstm', 'gru').
     - embedding_dimension: the length of each phoneme's embedding vector.
-    - rnn_hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
+    - hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
+    - num_layers: number of layers in the RNN. Defaults to 1.
     - device: 'cuda' or 'cpu'. Defaults to 'gpu' if available.
     - lr: learning rate.
     - max_epochs: the maximum number of epochs to train for. Note that this an
@@ -63,7 +64,8 @@ class PhonemeLM(nn.Module):
         phoneme_to_idx,
         rnn_type,
         embedding_dimension,
-        rnn_hidden_dimension,
+        hidden_dimension,
+        num_layers=1,
         device=None,
         lr=1e-3,
         max_epochs=100,
@@ -101,11 +103,12 @@ class PhonemeLM(nn.Module):
 
         self.rnn = rnn_model(
             input_size=embedding_dimension,
-            hidden_size=rnn_hidden_dimension,
+            hidden_size=hidden_dimension,
+            num_layers=num_layers,
             batch_first=True
         )
     
-        self.linear = nn.Linear(rnn_hidden_dimension, self.vocab_size)
+        self.linear = nn.Linear(hidden_dimension, self.vocab_size)
 
         self.dropout = nn.Dropout(dropout)
 
