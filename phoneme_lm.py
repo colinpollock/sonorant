@@ -280,7 +280,7 @@ class PhonemeLM(nn.Module):
         self.eval()
         with torch.no_grad():
             phoneme_idx = self.phoneme_to_idx[phoneme]
-            return self.embedding(torch.LongTensor([phoneme_idx])).cpu().numpy()
+            return self.embedding(torch.LongTensor([phoneme_idx]).to(self.device)).cpu().numpy()
 
     @property
     def embeddings(self):
