@@ -51,6 +51,10 @@ class PhonemeLM(nn.Module):
     - max_epochs: the maximum number of epochs to train for. Note that this an
       argument to the model rather than the `fit` method so that it's easier to
       automate group all the hyperparameters in one place.
+    - early_stopping_rounds: The model will train until the dev score stops
+      improving. Dev error needs to decrease at least every
+      early_stopping_rounds to continue training.
+    - dropout
     - batch_size
     """
     def __init__(
@@ -60,7 +64,9 @@ class PhonemeLM(nn.Module):
         embedding_dimension,
         rnn_hidden_dimension,
         device=None,
-        max_epochs=10,
+        max_epochs=100,
+        early_stopping_rounds=5,
+        dropout=0.5,
         batch_size=256,
     ):
         super(PhonemeLM, self).__init__()
@@ -75,6 +81,7 @@ class PhonemeLM(nn.Module):
 
         self.batch_size = batch_size
         self.max_epochs = max_epochs
+        self.early_stopping_rounds = early_stopping_rounds
         
         self.phoneme_to_idx = phoneme_to_idx
         self.idx_to_phoneme = {idx: phoneme for (phoneme, idx) in phoneme_to_idx.items()}
@@ -97,10 +104,14 @@ class PhonemeLM(nn.Module):
     
         self.linear = nn.Linear(rnn_hidden_dimension, self.vocab_size)
 
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, inputs, hidden_state=None):
         inputs = inputs.to(self.device)
-        embedded = self.embedding(inputs)
+
+        embedded = self.dropout(self.embedding(inputs))
         rnn_output, new_hidden_state = self.rnn(embedded, hidden_state)
+        rnn_output = self.dropout(rnn_output)
         return self.linear(rnn_output), new_hidden_state
     
     def fit(
@@ -109,7 +120,7 @@ class PhonemeLM(nn.Module):
         assess_pronunciations=None,
         lr=1e-3,
         max_epochs=None,
-        early_stopping_rounds=2,
+        early_stopping_rounds=None,
         batch_size=None
     ):
         """Fit on the pronunciations.
@@ -140,6 +151,7 @@ class PhonemeLM(nn.Module):
         assess_losses = []
 
         max_epochs = max_epochs if max_epochs is not None else self.max_epochs
+        early_stopping_rounds = early_stopping_rounds if early_stopping_rounds is not None else self.early_stopping_rounds
         for epoch in range(1, max_epochs + 1):
             if not decreased(assess_losses, early_stopping_rounds):
                 print(
