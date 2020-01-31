@@ -110,8 +110,7 @@ class PhonemeLM(nn.Module):
         lr=1e-3,
         max_epochs=None,
         early_stopping_rounds=2,
-        batch_size=None,
-        pin_memory=True
+        batch_size=None
     ):
         """Fit on the pronunciations.
         Args:
@@ -126,15 +125,14 @@ class PhonemeLM(nn.Module):
           improving. Dev error needs to decrease at least every
           early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
-        - pin_memory: speeds up transfer to GPU
         """
         optimizer = Adam(self.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss()
 
         batch_size = batch_size if batch_size is not None else self.batch_size
-        train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size, pin_memory)
+        train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size)
         if assess_pronunciations is not None:
-            assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size, pin_memory)
+            assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
 
         self.to(self.device)
 
@@ -289,7 +287,7 @@ class PhonemeLM(nn.Module):
         return self.embedding.weight.cpu().detach().numpy()
 
 
-def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128, pin_memory=True):
+def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
     """Convert the pronunciations into a LongTensor.
 
     Args:
@@ -323,7 +321,7 @@ def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128, pin_memory
         pad_sequence(target_pronunciations_as_token_ids, batch_first=True, padding_value=PAD_VALUE)
     )
     
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
 
 def decode(phoneme_idxs, id_to_phoneme):
     """Return the phonemes as a string for the given int representation."""
