@@ -102,7 +102,7 @@ class PhonemeLM(nn.Module):
         rnn_output, new_hidden_state = self.rnn(embedded, hidden_state)
         return self.linear(rnn_output), new_hidden_state
     
-    def fit(self, train_pronunciations, assess_pronunciations=None, epochs=None, batch_size=None):
+    def fit(self, train_pronunciations, assess_pronunciations=None, epochs=None, batch_size=None, pin_memory=True):
         """Fit on the pronunciations.
         Args:
         - train_pronunciations: list of pronunciations, each of which is a
@@ -111,14 +111,15 @@ class PhonemeLM(nn.Module):
           evaluate the model after each epoch.
         - epochs: the number of epochs to train for. Defaults to self.epochs.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
+        - pin_memory: speeds up transfer to GPU
         """
         optimizer = Adam(self.parameters())
         criterion = nn.CrossEntropyLoss()
 
         batch_size = batch_size if batch_size is not None else self.batch_size
-        train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size)
+        train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size, pin_memory)
         if assess_pronunciations is not None:
-            assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
+            assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size, pin_memory)
 
         self.to(self.device)
 
@@ -141,7 +142,7 @@ class PhonemeLM(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    'Batch {} of {}; loss: {:.4f}'.format(
+                    'Epoch {epoch}: Batch {} of {}; loss: {:.4f}'.format(
                         batch_num,
                         len(train_loader),
                         loss.item()
@@ -265,7 +266,7 @@ class PhonemeLM(nn.Module):
         return self.embedding.weight.cpu().detach().numpy()
 
 
-def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
+def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128, pin_memory=True):
     """Convert the pronunciations into a LongTensor.
 
     Args:
@@ -299,7 +300,7 @@ def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
         pad_sequence(target_pronunciations_as_token_ids, batch_first=True, padding_value=PAD_VALUE)
     )
     
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
 
 def decode(phoneme_idxs, id_to_phoneme):
     """Return the phonemes as a string for the given int representation."""
