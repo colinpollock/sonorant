@@ -48,6 +48,7 @@ class PhonemeLM(nn.Module):
     - embedding_dimension: the length of each phoneme's embedding vector.
     - rnn_hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
     - device: 'cuda' or 'cpu'. Defaults to 'gpu' if available.
+    - lr: learning rate.
     - max_epochs: the maximum number of epochs to train for. Note that this an
       argument to the model rather than the `fit` method so that it's easier to
       automate group all the hyperparameters in one place.
@@ -64,6 +65,7 @@ class PhonemeLM(nn.Module):
         embedding_dimension,
         rnn_hidden_dimension,
         device=None,
+        lr=1e-3,
         max_epochs=100,
         early_stopping_rounds=5,
         dropout=0.5,
@@ -79,6 +81,7 @@ class PhonemeLM(nn.Module):
         else:
             self.device = torch.device(device)
 
+        self.lr = lr
         self.batch_size = batch_size
         self.max_epochs = max_epochs
         self.early_stopping_rounds = early_stopping_rounds
@@ -118,7 +121,7 @@ class PhonemeLM(nn.Module):
         self,
         train_pronunciations,
         assess_pronunciations=None,
-        lr=1e-3,
+        lr=None,
         max_epochs=None,
         early_stopping_rounds=None,
         batch_size=None
@@ -129,7 +132,7 @@ class PhonemeLM(nn.Module):
           sequence of ARPABET, that the model is trained on.
         - assess_pronunciations: same format as above. Used as a holdout set to
           evaluate the model after each epoch.
-        - lr: learning rate.
+        - lr: learning rate. Defaults to self.lr if None.
         - max_epochs: the maximum number of epochs to train for. Defaults to 
           self.max_epochs.
         - early_stopping_rounds: The model will train until the dev score stops
@@ -137,21 +140,23 @@ class PhonemeLM(nn.Module):
           early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
         """
+        # Set None parameters passed in to the their default values in `self`.
+        lr = lr if lr is not None else self.lr
+        max_epochs = max_epochs if max_epochs is not None else self.max_epochs
+        early_stopping_rounds = early_stopping_rounds if early_stopping_rounds is not None else self.early_stopping_rounds
+        batch_size = batch_size if batch_size is not None else self.batch_size
+
+        self.to(self.device)
+
         optimizer = Adam(self.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss()
 
-        batch_size = batch_size if batch_size is not None else self.batch_size
         train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size)
         if assess_pronunciations is not None:
             assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
 
-        self.to(self.device)
-
         train_losses = []
         assess_losses = []
-
-        max_epochs = max_epochs if max_epochs is not None else self.max_epochs
-        early_stopping_rounds = early_stopping_rounds if early_stopping_rounds is not None else self.early_stopping_rounds
         for epoch in range(1, max_epochs + 1):
             if not decreased(assess_losses, early_stopping_rounds):
                 print(
