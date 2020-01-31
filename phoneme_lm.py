@@ -162,7 +162,7 @@ class PhonemeLM(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    'Epoch {}: Batch {} of {}; loss: {:.4f}'.format(
+                    'Epoch {}; Batch {} of {}; loss: {:.4f}'.format(
                         epoch,
                         batch_num,
                         len(train_loader),
@@ -173,13 +173,14 @@ class PhonemeLM(nn.Module):
 
             train_loss = self.evaluate(train_loader)
             train_losses.append(train_loss)
-            print(f'Epoch {epoch}: train loss: {train_loss:.4f}', end='')
+            status = f'Epoch {epoch}: train loss: {train_loss:.4f}'
 
             if assess_pronunciations is not None:
                 assess_loss = self.evaluate(assess_loader)
                 assess_losses.append(assess_loss)
-                print(f'\tassess loss: {assess_loss:.4f}', end='')
-            print()
+                status += f'\tassess loss: {assess_loss:.4f}'
+
+            print(status)
 
             for _ in range(5):
                 generated_pronunciation = ' '.join(self.generate(10, 1))
