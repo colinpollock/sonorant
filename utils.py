@@ -50,3 +50,27 @@ def _strip_stress(pronunciation):
         new_pronunciation.append(phoneme)
 
     return new_pronunciation
+
+def decreased(scores, in_last):
+    """Return True iff the score in the last `in_last` descended."""
+    if in_last >= len(scores):
+        return True
+    
+    last = scores[-(in_last+1)]
+    for score in scores[-in_last:]:
+        if score < last:
+            return True
+        last = score
+        
+    return False
+    
+# TODO: put this in tests 
+# def check(scores, in_last, expected):
+#     assert decreased(scores, in_last) == expected
+
+# check([2, 1], 1, True)
+# check([2, 1], 2, True)
+# check([1, 2], 2, True)
+# check([1, 2], 1, False)
+# check([], 1, True)
+# check([1, 2, 1, 4], 3, True)

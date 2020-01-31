@@ -6,7 +6,7 @@ English words from the [2] CMU Pronouncing Dictionary.
 Language models over phonemes can do a few things:
 1. Assign a probability to how likely a pronunciation (i.e.phoneme) string is.
 2. Generate pronunciations.
-################################################################################
+
 Additionally, the embeddings for the phonemes seem to encode some phonetic
 properties. For example, adding a Voicing vector to /p/ results in /b/.
 
@@ -23,6 +23,8 @@ from torch.nn import functional as F
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
+
+from utils import decreased
 
 
 PAD = '<PAD>'
@@ -46,20 +48,19 @@ class PhonemeLM(nn.Module):
     - embedding_dimension: the length of each phoneme's embedding vector.
     - rnn_hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
     - device: 'cuda' or 'cpu'. Defaults to 'gpu' if available.
-    - epochs: the number of epochs to train for. Note that this an argument to
-      the model rather than the `fit` method so that it's easier to automate
-      group all the hyperparameters in one place.
+    - max_epochs: the maximum number of epochs to train for. Note that this an
+      argument to the model rather than the `fit` method so that it's easier to
+      automate group all the hyperparameters in one place.
     - batch_size
     """
     def __init__(
         self,
         phoneme_to_idx,
-        idx_to_phoneme,
         rnn_type,
         embedding_dimension,
         rnn_hidden_dimension,
         device=None,
-        epochs=10,
+        max_epochs=10,
         batch_size=256,
     ):
         super(PhonemeLM, self).__init__()
@@ -73,10 +74,10 @@ class PhonemeLM(nn.Module):
             self.device = torch.device(device)
 
         self.batch_size = batch_size
-        self.epochs = epochs
+        self.max_epochs = max_epochs
         
         self.phoneme_to_idx = phoneme_to_idx
-        self.idx_to_phoneme = idx_to_phoneme
+        self.idx_to_phoneme = {idx: phoneme for (phoneme, idx) in phoneme_to_idx.items()}
         self.vocab = sorted(phoneme_to_idx, key=phoneme_to_idx.get)
         self.vocab_size = len(phoneme_to_idx)
 
@@ -102,18 +103,32 @@ class PhonemeLM(nn.Module):
         rnn_output, new_hidden_state = self.rnn(embedded, hidden_state)
         return self.linear(rnn_output), new_hidden_state
     
-    def fit(self, train_pronunciations, assess_pronunciations=None, epochs=None, batch_size=None, pin_memory=True):
+    def fit(
+        self,
+        train_pronunciations,
+        assess_pronunciations=None,
+        lr=1e-3,
+        max_epochs=None,
+        early_stopping_rounds=2,
+        batch_size=None,
+        pin_memory=True
+    ):
         """Fit on the pronunciations.
         Args:
         - train_pronunciations: list of pronunciations, each of which is a
           sequence of ARPABET, that the model is trained on.
         - assess_pronunciations: same format as above. Used as a holdout set to
           evaluate the model after each epoch.
-        - epochs: the number of epochs to train for. Defaults to self.epochs.
+        - lr: learning rate.
+        - max_epochs: the maximum number of epochs to train for. Defaults to 
+          self.max_epochs.
+        - early_stopping_rounds: The model will train until the dev score stops
+          improving. Dev error needs to decrease at least every
+          early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
         - pin_memory: speeds up transfer to GPU
         """
-        optimizer = Adam(self.parameters())
+        optimizer = Adam(self.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss()
 
         batch_size = batch_size if batch_size is not None else self.batch_size
@@ -126,8 +141,15 @@ class PhonemeLM(nn.Module):
         train_losses = []
         assess_losses = []
 
-        epochs = epochs if epochs is not None else self.epochs
-        for epoch in range(1, epochs + 1):
+        max_epochs = max_epochs if max_epochs is not None else self.max_epochs
+        for epoch in range(1, max_epochs + 1):
+            if not decreased(assess_losses, early_stopping_rounds):
+                print(
+                    f'Early stopping because of no decrease in {early_stopping_rounds} epochs.',
+                    file=sys.stderr
+                )
+                break
+
             self.train()
             train_epoch_loss = 0
             for batch_num, (inputs, targets) in enumerate(train_loader, start=1):
@@ -142,7 +164,8 @@ class PhonemeLM(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    'Epoch {epoch}: Batch {} of {}; loss: {:.4f}'.format(
+                    'Epoch {}: Batch {} of {}; loss: {:.4f}'.format(
+                        epoch,
                         batch_num,
                         len(train_loader),
                         loss.item()
