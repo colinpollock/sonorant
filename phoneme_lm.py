@@ -387,7 +387,7 @@ def encode_pronunciation(pronunciation, phoneme_to_idx, target=False):
     Returns: a NumPy array of ints representing each phoneme.
     """
     if target is True:
-        with_boundaries = pronunciation + [END, END]
+        with_boundaries = pronunciation + [END, PAD]
     else:
         with_boundaries = [START] + pronunciation + [END]    
     return np.array([phoneme_to_idx[phoneme] for phoneme in with_boundaries])
