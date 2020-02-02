@@ -302,7 +302,6 @@ class PhonemeLM(nn.Module):
         # probability for the pronunciation.
         total_logprob = 0
         for step, (input_phoneme_idx, next_phoneme_idx) in enumerate(zip(encoded_pronunciation, encoded_pronunciation[1:])):
-            # next_phoneme_idx = self.phoneme_to_idx[next_phoneme]
             prob = output[step, next_phoneme_idx].item()
             total_logprob += math.log(prob)
 
