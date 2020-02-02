@@ -254,6 +254,26 @@ class PhonemeLM(nn.Module):
 
         return generated
 
+    def next_probabilities(self, pronunciation):
+        """Return the probability of each phoneme coming next.
+
+        Args:
+        - pronunciation: the beginning of the pronunciation, as ARPABET phonemes.
+
+        Returns: a dict mapping each phoneme in the vocabulary to a probability.
+        """
+        # Dropping the final phoneme, which is the END token.
+        encoded = encode_pronunciation(pronunciation, self.phoneme_to_idx)[:-1]
+        input_ = torch.LongTensor(encoded).unsqueeze(0)
+        output, _ = self(input_)
+        probabilities = F.softmax(output, dim=-1)
+        next_phoneme_probabilities = probabilities[0, -1, :]
+
+        return {
+            self.idx_to_phoneme[idx]: probability
+            for idx, probability in enumerate(next_phoneme_probabilities)
+        }
+
 
     def calculate_probability(self, pronunciation):
         """Calculate the probability of the given pronunciation.
