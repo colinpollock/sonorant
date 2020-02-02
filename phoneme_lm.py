@@ -234,20 +234,20 @@ class PhonemeLM(nn.Module):
         """
         self.eval()
 
-        phoneme_idx = self.phoneme_to_idx[START]
-        output, hidden_state = self(torch.LongTensor([phoneme_idx]).unsqueeze(0))
-        phoneme_idx = output.squeeze().argmax().item()
-        
         generated = []
+
+        phoneme_idx = self.phoneme_to_idx[START]
+        hidden_state = None
         for _ in range(max_length):
             input_ = torch.LongTensor([phoneme_idx]).unsqueeze(0)
             output, hidden_state = self(input_, hidden_state)
             probabilities = F.softmax(output.squeeze(), dim=0)
+
             # TODO: use temperature
             phoneme_idx = torch.multinomial(probabilities, 1).item()
             phoneme = self.idx_to_phoneme[phoneme_idx]
             
-            if phoneme == END:
+            if phoneme in (PAD, END):
                 break
 
             generated.append(phoneme)
