@@ -54,8 +54,8 @@ class PhonemeLM(nn.Module):
     - max_epochs: the maximum number of epochs to train for. Note that this an
       argument to the model rather than the `fit` method so that it's easier to
       automate group all the hyperparameters in one place.
-    - early_stopping_rounds: The model will train until the dev score stops
-      improving. Dev error needs to decrease at least every
+    - early_stopping_rounds: The model will train until the train score stops
+      improving. Train error needs to decrease at least every
       early_stopping_rounds to continue training.
     - dropout
     - batch_size
@@ -162,7 +162,7 @@ class PhonemeLM(nn.Module):
         train_losses = []
         assess_losses = []
         for epoch in range(1, max_epochs + 1):
-            if not decreased(assess_losses, early_stopping_rounds):
+            if not decreased(train_losses, early_stopping_rounds):
                 print(
                     f'Early stopping because of no decrease in {early_stopping_rounds} epochs.',
                     file=sys.stderr
