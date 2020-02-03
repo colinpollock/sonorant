@@ -58,6 +58,7 @@ class PhonemeLM(nn.Module):
       improving. Train error needs to decrease at least every
       early_stopping_rounds to continue training.
     - dropout
+    - l2_strength: L2 regularization strength. Default of 0 is no regularization.
     - batch_size
     """
     def __init__(
@@ -72,6 +73,7 @@ class PhonemeLM(nn.Module):
         max_epochs=100,
         early_stopping_rounds=5,
         dropout=0,
+        l2_strength=0,
         batch_size=256,
     ):
         super(PhonemeLM, self).__init__()
@@ -112,6 +114,7 @@ class PhonemeLM(nn.Module):
         self.linear = nn.Linear(hidden_dimension, self.vocab_size)
 
         self.dropout = nn.Dropout(dropout)
+        self.l2_strength = l2_strength
 
     def forward(self, inputs, hidden_state=None):
         inputs = inputs.to(self.device)
@@ -152,7 +155,7 @@ class PhonemeLM(nn.Module):
 
         self.to(self.device)
 
-        optimizer = Adam(self.parameters(), lr=lr)
+        optimizer = Adam(self.parameters(), lr=lr, weight_decay=self.l2_strength)
         criterion = nn.CrossEntropyLoss()
 
         train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size)
