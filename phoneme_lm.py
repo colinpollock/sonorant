@@ -213,11 +213,23 @@ class PhonemeLM(nn.Module):
         return train_losses, assess_losses
 
     def evaluate(self, loader):
+        """Compute the average entropy per symbol on the input loader.
+
+        Loss for every single predicted phoneme is summed and that result is
+        divided by the total number of phonemes seen. Note that the base for
+        entropy is e rather than 2.
+
+        Per-symbol is useful since the return value for different size
+        loaders or different batch sizes are the same.
+        """
         self.eval()
 
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(reduction='sum')
         loss = 0
+        total_phonemes = 0
+
         for inputs, targets in loader:
+            total_phonemes += inputs.numel()
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
 
@@ -225,7 +237,7 @@ class PhonemeLM(nn.Module):
                 outputs, hidden_states = self(inputs, hidden_state=None)
                 loss += criterion(outputs.permute(0, 2, 1), targets)
 
-        return (loss / len(loader)).item()
+        return loss / total_phonemes
 
     def generate(self, max_length, temperature):
         """Generate a pronunciation.
