@@ -131,7 +131,8 @@ class PhonemeLM(nn.Module):
         lr=None,
         max_epochs=None,
         early_stopping_rounds=None,
-        batch_size=None
+        batch_size=None,
+        show_generated=5,
     ):
         """Fit on the pronunciations.
         Args:
@@ -146,6 +147,8 @@ class PhonemeLM(nn.Module):
           improving. Dev error needs to decrease at least every
           early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
+        - show_generated: number of generated words to print out after each
+          epoch.
         """
         # Set None parameters passed in to the their default values in `self`.
         lr = lr if lr is not None else self.lr
@@ -206,8 +209,8 @@ class PhonemeLM(nn.Module):
 
             print(status)
 
-            for _ in range(5):
-                generated_pronunciation = ' '.join(self.generate(10, 1))
+            for _ in range(show_generated):
+                generated_pronunciation = ' '.join(self.generate(25, 1))
                 print('\t', generated_pronunciation)
 
         return train_losses, assess_losses
