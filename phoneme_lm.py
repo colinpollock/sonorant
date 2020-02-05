@@ -28,9 +28,9 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils import decreased
 
 
-PAD = '<PAD>'
-START = '<W>'
-END = '</W>'
+PAD = 'PAD'
+START = 'START'
+END = 'END'
 PAD_VALUE = 0
 START_VALUE = 1
 END_VALUE = 2
