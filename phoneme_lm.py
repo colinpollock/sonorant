@@ -357,9 +357,6 @@ def build_data_loader(pronunciations, phoneme_to_idx, batch_size=128):
         for pronunciation in pronunciations
     ]
 
-    data = pad_sequence(pronunciations_as_token_ids, batch_first=True)
-    
-    
     dataset = TensorDataset(
         pad_sequence(pronunciations_as_token_ids, batch_first=True, padding_value=PAD_VALUE),
         pad_sequence(target_pronunciations_as_token_ids, batch_first=True, padding_value=PAD_VALUE)
