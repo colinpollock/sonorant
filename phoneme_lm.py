@@ -165,6 +165,11 @@ class PhonemeLM(nn.Module):
         if assess_pronunciations is not None:
             assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
 
+        raw_train_pronunciations = {
+            tuple(pronunciation) for pronunciation in train_pronunciations}
+        raw_assess_pronunciations = {
+            tuple(pronunciation) for pronunciation in assess_pronunciations}
+
         train_losses = []
         assess_losses = []
         for epoch in range(1, max_epochs + 1):
@@ -209,11 +214,37 @@ class PhonemeLM(nn.Module):
 
             print(status)
 
+            generated_pronunciations = self.generate(100, 1)
+
+            num_train_origin, num_assess_origin, num_novel_origin =  \
+                self._count_origins(generated_pronunciations, raw_train_pronunciations, raw_assess_pronunciations)
+            print('\tGenerated: in train: {:.0f}%, assess: {:.0f}%, novel: {:.0f}%'.format(
+                num_train_origin, num_assess_origin, num_novel_origin
+            ))
+
             for _ in range(show_generated):
                 generated_pronunciation = ' '.join(self.generate(25, 1))
                 print('\t', generated_pronunciation)
 
         return train_losses, assess_losses
+
+    @staticmethod
+    def _count_origins(generated_pronunciations, train_pronunciations, assess_pronunciations):
+        """Count the proportion of generated pronunciations that are in the
+        train or assess sets, or are novel words. Return percentages.
+        """
+        train = assess = novel = 0
+        for pronunciation in generated_pronunciations:
+            if pronunciation in train_pronunciations:
+                train += 1
+            elif pronunciation in assess_pronunciations:
+                assess += 1
+            else:
+                novel += 1
+
+        total = len(generated_pronunciations)
+        return train / total * 100, assess / total * 100, novel / total * 100
+
 
     def evaluate(self, loader):
         """Compute the average entropy per symbol on the input loader.
