@@ -240,7 +240,7 @@ class PhonemeLM(nn.Module):
                 outputs, hidden_states = self(inputs, hidden_state=None)
                 loss += criterion(outputs.permute(0, 2, 1), targets)
 
-        return loss / total_phonemes
+        return (loss / total_phonemes).item()
 
     def generate(self, max_length, temperature):
         """Generate a pronunciation.
