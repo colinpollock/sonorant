@@ -20,7 +20,7 @@ def load_data(include_stress=False):
         for pronunciation in pronunciations:
             if not include_stress:
                 pronunciation = _strip_stress(pronunciation)
-            records.append({'word': word, 'pronunciation': pronunciation})
+            records.append({'word': word, 'pronunciation': tuple(pronunciation)})
 
     return pd.DataFrame(records)
 

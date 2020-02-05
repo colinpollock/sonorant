@@ -132,7 +132,7 @@ class PhonemeLM(nn.Module):
         max_epochs=None,
         early_stopping_rounds=None,
         batch_size=None,
-        show_generated=5,
+        show_generated=True,
     ):
         """Fit on the pronunciations.
         Args:
@@ -147,7 +147,7 @@ class PhonemeLM(nn.Module):
           improving. Dev error needs to decrease at least every
           early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
-        - show_generated: number of generated words to print out after each
+        - show_generated: whether to print out generated pronunciations after each
           epoch.
         """
         # Set None parameters passed in to the their default values in `self`.
@@ -164,11 +164,6 @@ class PhonemeLM(nn.Module):
         train_loader = build_data_loader(train_pronunciations, self.phoneme_to_idx, batch_size)
         if assess_pronunciations is not None:
             assess_loader = build_data_loader(assess_pronunciations, self.phoneme_to_idx, batch_size)
-
-        raw_train_pronunciations = {
-            tuple(pronunciation) for pronunciation in train_pronunciations}
-        raw_assess_pronunciations = {
-            tuple(pronunciation) for pronunciation in assess_pronunciations}
 
         train_losses = []
         assess_losses = []
@@ -214,17 +209,16 @@ class PhonemeLM(nn.Module):
 
             print(status)
 
-            generated_pronunciations = self.generate(100, 1)
-
+            generated_pronunciations = [self.generate(100, 1) for _ in range(100)]
             num_train_origin, num_assess_origin, num_novel_origin =  \
-                self._count_origins(generated_pronunciations, raw_train_pronunciations, raw_assess_pronunciations)
+                self._count_origins(generated_pronunciations, train_pronunciations, assess_pronunciations)
             print('\tGenerated: in train: {:.0f}%, assess: {:.0f}%, novel: {:.0f}%'.format(
                 num_train_origin, num_assess_origin, num_novel_origin
             ))
 
-            for _ in range(show_generated):
-                generated_pronunciation = ' '.join(self.generate(25, 1))
-                print('\t', generated_pronunciation)
+            if show_generated:
+                for pronunciation in generated_pronunciations[:5]:
+                    print('\t', ' '.join(pronunciation))
 
         return train_losses, assess_losses
 
@@ -280,7 +274,7 @@ class PhonemeLM(nn.Module):
         - max_length: the maximum number of phonemes to generate.
         - temperature: the amount of diversity in the generated pronunciation.
 
-        Returns: a list of ARPABET phonemes.
+        Returns: a tuple of ARPABET phonemes.
         """
         self.eval()
 
@@ -302,7 +296,7 @@ class PhonemeLM(nn.Module):
 
             generated.append(phoneme)
 
-        return generated
+        return tuple(generated)
 
     def next_probabilities(self, pronunciation):
         """Return the probability of each phoneme coming next.
@@ -442,7 +436,7 @@ def encode_pronunciation(pronunciation, phoneme_to_idx, target=False):
     """Encode a pronunciation
 
     Args:
-    - pronuncation: a sequence of phonemes, each of which is a string.
+    - pronuncation: a tuple of phonemes, each of which is a string.
     - phoneme_to_idx: a dict mapping phoneme strings to their indices.
     - target: bool indicating how to wrap the output in START and END
       indicators. If False then the result is [START, ...phonemes..., END]. If
@@ -453,8 +447,8 @@ def encode_pronunciation(pronunciation, phoneme_to_idx, target=False):
     Returns: a NumPy array of ints representing each phoneme.
     """
     if target is True:
-        with_boundaries = pronunciation + [END, PAD]
+        with_boundaries = pronunciation + (END, PAD)
     else:
-        with_boundaries = [START] + pronunciation + [END]    
+        with_boundaries = (START,) + pronunciation + (END,)
     return np.array([phoneme_to_idx[phoneme] for phoneme in with_boundaries])
 
