@@ -209,9 +209,10 @@ class PhonemeLM(nn.Module):
 
             print(status)
 
-            generated_pronunciations = [self.generate(100, 1) for _ in range(100)]
+            generated_pronunciations = [self.generate(1000, 1) for _ in range(100)]
+
             num_train_origin, num_assess_origin, num_novel_origin =  \
-                self._count_origins(generated_pronunciations, train_pronunciations, assess_pronunciations)
+                self._count_origins(generated_pronunciations, train_pronunciations, assess_pronunciations or [])
             print('\tGenerated: in train: {:.0f}%, assess: {:.0f}%, novel: {:.0f}%'.format(
                 num_train_origin, num_assess_origin, num_novel_origin
             ))
