@@ -22,7 +22,10 @@ def load_data(include_stress=False):
                 pronunciation = _strip_stress(pronunciation)
             records.append({'word': word, 'pronunciation': tuple(pronunciation)})
 
-    return pd.DataFrame(records)
+    df = pd.DataFrame(records).set_index('word')
+    df['pronunciation_string'] = df.pronunciation.apply(' '.join)
+    df['length'] = df.pronunciation.apply(len)
+    return df
 
 
 def split_data(df, dev_proportion, test_proportion, random_state=47):
