@@ -328,10 +328,6 @@ class PhonemeLM(nn.Module):
 
         Returns: the probability as a float.
         """
-
-        # TODO: fix for single phonemes
-        # TODO: some kind of length normalization
-
         encoded_pronunciation = encode_pronunciation(
             pronunciation,
             self.phoneme_to_idx
