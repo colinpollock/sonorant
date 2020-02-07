@@ -315,7 +315,7 @@ class PhonemeLM(nn.Module):
         next_phoneme_probabilities = probabilities[0, -1, :]
 
         return {
-            self.idx_to_phoneme[idx]: probability
+            self.idx_to_phoneme[idx]: probability.item()
             for idx, probability in enumerate(next_phoneme_probabilities)
         }
 
