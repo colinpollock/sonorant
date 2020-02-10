@@ -137,11 +137,43 @@ class TestLanguageModel:
         os.close(fd)
     
     def test_save_and_load_missing_keys(self):
-        assert False
+        fd, path = tempfile.mkstemp()
+
+        with open(path, 'wb') as fh:
+            self.lm.save(fh)
+
+        # Loading the saved data. Deleting a single key.
+        with open(path, 'rb') as fh:
+            data = torch.load(fh)
+        del data['state_dict']['_encoder.weight'] 
+        with open(path, 'wb') as fh:
+            torch.save(data, fh)
+
+        with open(path, 'rb') as fh:
+            with pytest.raises(RuntimeError):
+                LanguageModel.load(fh, 'cpu')
+
+        os.close(fd)
 
     def test_save_and_load_unexpected_keys(self):
-        assert False
-    
+        fd, path = tempfile.mkstemp()
+
+        with open(path, 'wb') as fh:
+            self.lm.save(fh)
+
+        # Loading the saved data. Adding one unexpected key.
+        with open(path, 'rb') as fh:
+            data = torch.load(fh)
+        data['state_dict']['UNEXPECTED_KEY.weight'] = data['state_dict']['_encoder.weight'] 
+        with open(path, 'wb') as fh:
+            torch.save(data, fh)
+
+        with open(path, 'rb') as fh:
+            with pytest.raises(RuntimeError):
+                LanguageModel.load(fh, 'cpu')
+
+        os.close(fd)
+
 
 def test_fit_language_model():
     """Simple test to make sure that after one epoch every parameter tensor has at least some change."""

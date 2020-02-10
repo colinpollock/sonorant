@@ -353,6 +353,7 @@ class LanguageModel(nn.Module):
         return self._encoder.weight.cpu().detach().numpy()
     
     def save(self, file_handle):
+        """Save a file to disk."""
         data = {
             'token_to_idx': self.vocab.token_to_idx,
             'model_params': self.mp._asdict(),
@@ -363,29 +364,17 @@ class LanguageModel(nn.Module):
     
     @staticmethod
     def load(file_handle, device_name: str) -> 'LanguageModel':
+        """Load a model from disk that has been saved using the `save` method."""
         data = torch.load(file_handle)
         vocab = Vocabulary(data['token_to_idx'])
         model_params = ModelParams(**data['model_params'])
         state_dict = data['state_dict']
         device = get_torch_device_by_name(device_name)
-        model = LanguageModel(vocab, model_params, device)
 
-        incompatible_keys = model.load_state_dict(state_dict)
-        if incompatible_keys.missing_keys  or incompatible_keys.unexpected_keys:
-            message = 'Model could not be loaded because of missing or unexpected keys'
-            if incompatible_keys.missing_keys:
-                message += '\nMissing keys: ' + ', '.join(incompatible_keys.missing_keys)
-            if incompatible_keys.unexpected_keys:
-                message += '\nUnexpected keys: ' + ', '.join(incompatible_keys.unexpected_keys)
-            raise ValueError(message)
+        model = LanguageModel(vocab, model_params, device)
+        model.load_state_dict(state_dict)
 
         return model
-
-
-
-
-        # Save parameters, vocabularly, model_params
-
 
 
 class Vocabulary:

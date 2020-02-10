@@ -11,7 +11,7 @@ ALLOWABLE_LETTERS = set(ascii_lowercase)
 CMU = nltk.corpus.cmudict.dict()
 
 
-def load_data(include_stress=True):
+def load_pronunciations(include_stress=True):
     """Return a DataFrame with columns for `word` and `pronunciation`."""
     records = []
     for word, pronunciations in CMU.items():

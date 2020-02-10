@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 import torch
 from torch.nn.modules import rnn
+from unittest import mock
 
 from sonorous.utils import count_origins, get_rnn_model_by_name, get_torch_device_by_name, has_decreased, split_data
 
@@ -55,18 +56,25 @@ def test_get_rnn_model_by_name():
 
     with pytest.raises(ValueError):
         get_rnn_model_by_name('frank zappa')
-    
-def test_get_torch_device_by_name():
-    def check(device_name, cuda_is_available, expected_device):
-        device = get_torch_device_by_name(device_name)
-        assert device == expected_device
 
+
+def test_get_torch_device_by_name():
     cpu = torch.device('cpu')
     cuda = torch.device('cuda')
-    check('cpu', True, cpu)
-    check('cpu', False, cpu)
-    check('cuda', True, cuda)
 
-    with pytest.raises(KeyError):
-        check('cuda', False, None)
+    with mock.patch('sonorous.utils.torch.cuda.is_available', lambda : True):
+        assert get_torch_device_by_name('cpu') == cpu
+        assert get_torch_device_by_name('cuda') == cuda
 
+        assert get_torch_device_by_name() == cuda
+
+    with mock.patch('sonorous.utils.torch.cuda.is_available', lambda : False):
+        assert get_torch_device_by_name('cpu') == cpu
+
+        with pytest.raises(ValueError):
+            get_torch_device_by_name('cuda')
+
+        assert get_torch_device_by_name() == cpu
+
+    with pytest.raises(RuntimeError):
+        get_torch_device_by_name('lol what?')

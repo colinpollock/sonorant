@@ -87,11 +87,16 @@ def get_rnn_model_by_name(rnn_name: str) -> Union[nn.GRU, nn.LSTM, nn.RNN]:
     return name_to_model[rnn_name]
 
 
-def get_torch_device_by_name(device_name: Optional[str]) -> torch.device:
+def get_torch_device_by_name(device_name: Optional[str]=None) -> torch.device:
+    cuda_is_available = torch.cuda.is_available()
+
     if device_name is None:
-        if torch.cuda.is_available():
+        if cuda_is_available:
             return torch.device('cuda')
         else:
             return torch.device('cpu')
     else:
+        if device_name == 'cuda' and not cuda_is_available:
+            raise ValueError('cuda is not available')
+
         return torch.device(device_name )
