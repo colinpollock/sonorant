@@ -3,12 +3,12 @@
 
 from string import ascii_lowercase
 
-import nltk
+import cmudict
 import pandas as pd
 
 
 ALLOWABLE_LETTERS = set(ascii_lowercase)
-CMU = nltk.corpus.cmudict.dict()
+CMU = cmudict.dict()
 
 
 def load_pronunciations(include_stress=True):
