@@ -257,6 +257,12 @@ class TestVocab:
         a_idx = self.vocab["a"]
         assert self.vocab.token_from_idx(a_idx) == "a"
 
+    def test_cannot_use_dummy_token(self):
+        texts = [("hello", Vocabulary.START)]
+
+        with pytest.raises(ValueError):
+            Vocabulary.from_texts(texts)
+
 
 def _dummy_texts_and_vocab():
     # TODO: make fixture
