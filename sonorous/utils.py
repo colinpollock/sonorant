@@ -1,5 +1,5 @@
 """General utilities """
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Type
 
 import pandas as pd
 import torch
@@ -40,7 +40,11 @@ def has_decreased(scores, in_last):
     return False
 
 
-def count_origins(generated_texts: List[str], train_texts: List[str], dev_texts: List[str]) -> Tuple[float, float, float]:
+def count_origins(
+    generated_texts: Sequence[Tuple[str, ...]],
+    train_texts: Sequence[Tuple[str, ...]],
+    dev_texts: Sequence[Tuple[str, ...]]
+) -> Tuple[int, int, int]:
     """Count the proportion of generated texts that are in the train or dev
     sets, or are novel texts.
 
@@ -49,6 +53,11 @@ def count_origins(generated_texts: List[str], train_texts: List[str], dev_texts:
     useful for a large domain where texts are unlikely to repeat themselves
     entirely (e.g. generated paragraphs of text) but could be useful in a
     much more constrained domain like words of less than 15 characters.
+
+    Args:
+    - generated_texts: a List of texts, each of which is a tuple of tokens.
+    - train_texts: same format as `generated_texts`.
+    - dev_texts: same format as `generated_texts`.
 
     Returns a triple, which is the proportion of generated texts that are:
     1. in the train set
@@ -65,13 +74,14 @@ def count_origins(generated_texts: List[str], train_texts: List[str], dev_texts:
             novel += 1
 
     total = len(generated_texts)
-    return [
-        int(percentage)
-        for percentage in (train / total * 100, dev / total * 100, novel / total * 100)
-    ]
+    return (
+        int(train / total * 100),
+        int(dev / total * 100),
+        int(novel / total * 100)
+    )
 
 
-def get_rnn_model_by_name(rnn_name: str) -> Union[nn.GRU, nn.LSTM, nn.RNN]:
+def get_rnn_model_by_name(rnn_name: str) -> Type[nn.modules.rnn.RNNBase]:
     """Return a nn.RNN, nn.LSTM, or nn.GRU by name.
     """
     name_to_model = {

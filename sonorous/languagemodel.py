@@ -10,7 +10,7 @@ a list of tokens.
 
 import math
 import sys
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 import torch
 import numpy as np
@@ -53,28 +53,6 @@ class ModelParams(NamedTuple):
     batch_size: int=1024
 
 
-class PhonemeLM:
-    """A language model over phonemes.
-
-    There's not much about this class specific to phonemes and it could be used
-    for any vocabulary (words, characters, etc.).
-
-    Arguments to __init__:
-    - phoneme_to_idx: a dict mapping phonemes (each a string in ARPABET) to ints.
-    - params: a ModelParams.
-    - device: 'cuda' or 'cpu'. Defaults to 'gpu' if available.
-    """
-    def __init__(
-        self,
-        phoneme_to_idx: Dict[str, int],
-        model_params: ModelParams,
-        device_name: Optional[str]=None,
-    ):
-        self.model_params = model_params
-        self.device = get_torch_device_by_name(device_name)
-        self.lm = LanguageModel(phoneme_to_idx, model_params, device_name)
-
-
 class LanguageModel(nn.Module):
     def __init__(
         self,
@@ -115,14 +93,14 @@ class LanguageModel(nn.Module):
     
     def fit(
         self,
-        train_texts: List[List[str]],
-        dev_texts: Optional[List[List[str]]]=None,
+        train_texts: Sequence[Tuple[str]],
+        dev_texts: Sequence[Tuple[str]]=None,
         learning_rate: float=None,
         max_epochs: int=None,
         early_stopping_rounds: int=None,
         batch_size: int=None,
         show_generated: bool=True,
-    ):
+    ) -> Tuple[List[float], List[float]]:
         """Fit the model to the training data.
 
         Args:
@@ -139,6 +117,9 @@ class LanguageModel(nn.Module):
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
         - show_generated: whether to print out generated pronunciations after each
           epoch.
+
+        Returns a pair (train_losses: float, dev_losses: float), which are the
+            losses at each epoch.
         """
         # Set None parameters passed in to the their default values in `self`.
         learning_rate = learning_rate if learning_rate is not None else self.mp.learning_rate
@@ -155,7 +136,7 @@ class LanguageModel(nn.Module):
         if dev_texts is not None:
             dev_loader = build_data_loader(dev_texts, self.vocab, batch_size)
 
-        train_losses = []
+        train_losses: List[float] = []
         dev_losses = []
         for epoch in range(1, max_epochs + 1):
             if not has_decreased(train_losses, early_stopping_rounds):
@@ -166,7 +147,7 @@ class LanguageModel(nn.Module):
                 break
 
             self.train()
-            train_epoch_loss = 0
+            train_epoch_loss = 0.0
             for batch_num, (inputs, targets) in enumerate(train_loader, start=1):
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
@@ -223,7 +204,7 @@ class LanguageModel(nn.Module):
         self.eval()
 
         criterion = nn.CrossEntropyLoss(reduction='sum')
-        loss = 0
+        loss = 0.0
         total_tokens = 0
 
         for inputs, targets in loader:
@@ -232,10 +213,10 @@ class LanguageModel(nn.Module):
             targets = targets.to(self.device)
 
             with torch.no_grad():
-                outputs, hidden_states = self(inputs, hidden_state=None)
-                loss += criterion(outputs.permute(0, 2, 1), targets)
+                outputs, _ = self(inputs, hidden_state=None)
+                loss += criterion(outputs.permute(0, 2, 1), targets).item()
 
-        return (loss / total_tokens).item()
+        return (loss / total_tokens)
 
     def generate(self, max_length: int) -> Tuple[str, ...]:
         """Generate a new text.
@@ -256,7 +237,7 @@ class LanguageModel(nn.Module):
             output, hidden_state = self(input_, hidden_state)
             probabilities = F.softmax(output.squeeze(), dim=0)
 
-            token_idx = torch.multinomial(probabilities, 1).item()
+            token_idx = int(torch.multinomial(probabilities, 1).item())
             token = self.vocab.token_from_idx(token_idx)
             
             if token in self.vocab.DUMMY_TOKENS:
@@ -308,7 +289,7 @@ class LanguageModel(nn.Module):
         for step, (input_token__idx, next_token_idx) in enumerate(zip(encoded_text, encoded_text[1:])):
             probabilities.append(output[step, next_token_idx].item())
 
-        return probabilities
+        return tuple(probabilities)
 
     def probability_of_text(self, text: Tuple[str, ...]) -> float:
         """Calculate the probability of the given text.
@@ -318,7 +299,7 @@ class LanguageModel(nn.Module):
 
         Returns: the probability.
         """
-        total_logprob = 0
+        total_logprob = 0.0
         for probability in self.conditional_probabilities_of_text(text):
             total_logprob += math.log(probability)
         
@@ -369,9 +350,8 @@ class LanguageModel(nn.Module):
         vocab = Vocabulary(data['token_to_idx'])
         model_params = ModelParams(**data['model_params'])
         state_dict = data['state_dict']
-        device = get_torch_device_by_name(device_name)
 
-        model = LanguageModel(vocab, model_params, device)
+        model = LanguageModel(vocab, model_params, device_name)
         model.load_state_dict(state_dict)
 
         return model
@@ -489,7 +469,7 @@ class Vocabulary:
         return token_to_idx
     
 
-def build_data_loader(texts: List[List[str]], vocab: Vocabulary, batch_size=128) -> DataLoader:
+def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size=128) -> DataLoader:
     """Convert a list of texts into a LongTensor.
 
     Args:
