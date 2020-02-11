@@ -4,7 +4,7 @@ The main class of interest is `LanguageModel`. The model is an RNN (either a
 vanilla RNN, a LSTM, or a GRU). There are a number of options and
 hyperparameters that can be set on the model.
 
-To train the model you need to pass in a list of train texts, each of which is 
+To train the model you need to pass in a list of train texts, each of which is
 a list of tokens.
 """
 
@@ -20,7 +20,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
-from sonorous.utils import get_rnn_model_by_name, get_torch_device_by_name, has_decreased, count_origins, perplexity
+from sonorous.utils import get_rnn_model_by_name, get_torch_device_by_name, has_decreased, \
+    count_origins, perplexity
 
 
 class ModelParams(NamedTuple):
@@ -47,29 +48,30 @@ class ModelParams(NamedTuple):
     num_layers: int
     max_epochs: int
     early_stopping_rounds: int
-    learning_rate: float=1e-3
-    dropout: float=0
-    l2_strength: float=0
-    batch_size: int=1024
+    learning_rate: float = 1e-3
+    dropout: float = 0
+    l2_strength: float = 0
+    batch_size: int = 1024
 
 
 class LanguageModel(nn.Module):
+    """A trainable model built on top of PyTorch."""
+
     def __init__(
-        self,
-        vocab: 'Vocabulary',
-        model_params: ModelParams,
-        device_name: Optional[str]
+            self,
+            vocab: 'Vocabulary',
+            model_params: ModelParams,
+            device_name: Optional[str]
     ):
         super(LanguageModel, self).__init__()
 
-        # Short name since this'll be referenced a lot.
         self.vocab = vocab
-        self.mp = model_params
+        self.model_params = model_params
         self.device = get_torch_device_by_name(device_name)
 
         # Layers
         self._encoder = nn.Embedding(len(self.vocab), model_params.embedding_dimension)
-    
+
         rnn_model = get_rnn_model_by_name(model_params.rnn_type)
         self._rnn = rnn_model(
             input_size=model_params.embedding_dimension,
@@ -90,16 +92,16 @@ class LanguageModel(nn.Module):
         rnn_output, new_hidden_state = self._rnn(embedded, hidden_state)
         rnn_output = self._dropout(rnn_output)
         return self._decoder(rnn_output), new_hidden_state
-    
+
     def fit(
-        self,
-        train_texts: Sequence[Tuple[str]],
-        dev_texts: Sequence[Tuple[str]]=None,
-        learning_rate: float=None,
-        max_epochs: int=None,
-        early_stopping_rounds: int=None,
-        batch_size: int=None,
-        show_generated: bool=True,
+            self,
+            train_texts: Sequence[Tuple[str]],
+            dev_texts: Sequence[Tuple[str]] = None,
+            learning_rate: float = None,
+            max_epochs: int = None,
+            early_stopping_rounds: int = None,
+            batch_size: int = None,
+            show_generated: bool = True,
     ) -> Tuple[List[float], List[float]]:
         """Fit the model to the training data.
 
@@ -108,8 +110,8 @@ class LanguageModel(nn.Module):
           it would look like this: [["a", "cat"], ["the", "dog", ...]].
         - dev_texts: same format as `train_texts`, but used for printing out
           dev set errors during testing.
-        - learning_rate: learning rate. Defaults to self.mp.learning_rate if None.
-        - max_epochs: the maximum number of epochs to train for. Defaults to 
+        - learning_rate: learning rate. Defaults to self.model_params.learning_rate if None.
+        - max_epochs: the maximum number of epochs to train for. Defaults to
           self.max_epochs.
         - early_stopping_rounds: The model will train until the dev score stops
           improving. Train error needs to decrease at least every
@@ -122,14 +124,24 @@ class LanguageModel(nn.Module):
             losses at each epoch.
         """
         # Set None parameters passed in to the their default values in `self`.
-        learning_rate = learning_rate if learning_rate is not None else self.mp.learning_rate
-        max_epochs = max_epochs if max_epochs is not None else self.mp.max_epochs
-        early_stopping_rounds = early_stopping_rounds if early_stopping_rounds is not None else self.mp.early_stopping_rounds
-        batch_size = batch_size if batch_size is not None else self.mp.batch_size
+        learning_rate = (
+            learning_rate if learning_rate is not None
+            else self.model_params.learning_rate
+        )
+        max_epochs = max_epochs if max_epochs is not None else self.model_params.max_epochs
+        early_stopping_rounds = (
+            early_stopping_rounds if early_stopping_rounds is not None
+            else self.model_params.early_stopping_rounds
+        )
+        batch_size = batch_size if batch_size is not None else self.model_params.batch_size
 
         self.to(self.device)
 
-        optimizer = Adam(self.parameters(), lr=learning_rate, weight_decay=self.mp.l2_strength)
+        optimizer = Adam(
+            self.parameters(),
+            lr=learning_rate,
+            weight_decay=self.model_params.l2_strength
+        )
         criterion = nn.CrossEntropyLoss()
 
         train_loader = build_data_loader(train_texts, self.vocab, batch_size)
@@ -152,7 +164,7 @@ class LanguageModel(nn.Module):
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
 
-                outputs, hidden_states = self(inputs, hidden_state=None)
+                outputs, _ = self(inputs, hidden_state=None)
                 loss = criterion(outputs.permute(0, 2, 1), targets)
 
                 optimizer.zero_grad()
@@ -182,8 +194,12 @@ class LanguageModel(nn.Module):
 
             generated_texts = [self.generate(1000) for _ in range(100)]
 
-            percent_train_origin, percent_dev_origin, percent_novel_origin = count_origins(generated_texts, train_texts, dev_texts or [])
-            print(f'\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, novel: {percent_novel_origin}%')
+            percent_train_origin, percent_dev_origin, percent_novel_origin =  \
+                count_origins(generated_texts, train_texts, dev_texts or [])
+            print(
+                f'\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, '
+                f'novel: {percent_novel_origin}%'
+            )
 
             if show_generated:
                 for text in generated_texts[:5]:
@@ -216,7 +232,7 @@ class LanguageModel(nn.Module):
                 outputs, _ = self(inputs, hidden_state=None)
                 loss += criterion(outputs.permute(0, 2, 1), targets).item()
 
-        return (loss / total_tokens)
+        return loss / total_tokens
 
     def generate(self, max_length: int) -> Tuple[str, ...]:
         """Generate a new text.
@@ -239,7 +255,7 @@ class LanguageModel(nn.Module):
 
             token_idx = int(torch.multinomial(probabilities, 1).item())
             token = self.vocab.token_from_idx(token_idx)
-            
+
             if token in self.vocab.DUMMY_TOKENS:
                 break
 
@@ -286,7 +302,8 @@ class LanguageModel(nn.Module):
         # with the probabilities for each of the actual tokens. Through the
         # chain rule we can get the overall probability for the full text.
         probabilities = []
-        for step, (input_token__idx, next_token_idx) in enumerate(zip(encoded_text, encoded_text[1:])):
+
+        for step, next_token_idx in enumerate(encoded_text[1:]):
             probabilities.append(output[step, next_token_idx].item())
 
         return tuple(probabilities)
@@ -302,7 +319,7 @@ class LanguageModel(nn.Module):
         total_logprob = 0.0
         for probability in self.conditional_probabilities_of_text(text):
             total_logprob += math.log(probability)
-        
+
         return math.exp(total_logprob)
 
     def perplexity_of_text(self, text: Tuple[str, ...]) -> float:
@@ -332,17 +349,17 @@ class LanguageModel(nn.Module):
     def embeddings(self):
         """Return the embeddings as a NumPy array."""
         return self._encoder.weight.cpu().detach().numpy()
-    
+
     def save(self, file_handle):
         """Save a file to disk."""
         data = {
             'token_to_idx': self.vocab.token_to_idx,
-            'model_params': self.mp._asdict(),
+            'model_params': self.model_params._asdict(),
             'state_dict': self.state_dict()
         }
 
         torch.save(data, file_handle)
-    
+
     @staticmethod
     def load(file_handle, device_name: str) -> 'LanguageModel':
         """Load a model from disk that has been saved using the `save` method."""
@@ -391,13 +408,14 @@ class Vocabulary:
         # and no tokens can be added outside of __init__.
         self.tokens = set(token_to_idx)
         self.indices = set(self._idx_to_token)
-    
+
     @classmethod
-    def from_texts(cls, texts: List[List[str]]) -> 'Vocabulary':
+    def from_texts(cls, texts: Sequence[Tuple[str]]) -> 'Vocabulary':
+        """Initialize a `Vocabulary` from a Sequence of texts."""
         token_to_idx = cls._build_token_to_idx(texts)
         return Vocabulary(token_to_idx)
 
-    def encode_text(self, text: Tuple[str, ...], is_target: bool=False):
+    def encode_text(self, text: Tuple[str, ...], is_target: bool = False):
         """Encode a text as an array of int indices.
 
         Args:
@@ -424,33 +442,37 @@ class Vocabulary:
             raise KeyError(f"Token '{token}' is not in the vocabulary")
 
         return idx
-    
+
     def __contains__(self, token: str) -> bool:
         return token in self.token_to_idx
 
     def token_from_idx(self, idx: int) -> str:
+        """Return the token with the specified index.
+
+        Raises `KeyError` if it's missing.
+        """
         token = self._idx_to_token[idx]
         if token is None:
             raise KeyError(f"Token index '{idx}' is not in the vocabulary")
-        
+
         return token
-    
+
     def __eq__(self, other):
         if not isinstance(other, Vocabulary):
             return False
-        
+
         return self.token_to_idx == other.token_to_idx
 
     def __len__(self):
         return len(self.token_to_idx)
-    
+
     @classmethod
     def _build_token_to_idx(cls, texts: List[List[str]]) -> Dict[str, int]:
         """Build a token-to-index dictionary.
-        
+
         Args:
         - texts: a collection of texts, each of which is a list of tokens.
-        
+
         Returns: a dict mapping tokens to int indices.
         """
         tokens = {token for text in texts for token in text}
@@ -460,14 +482,14 @@ class Vocabulary:
         tokens.update(cls.DUMMY_TOKENS)
 
         token_to_idx = {cls.PAD: cls.PAD_IDX, cls.START: cls.START_IDX, cls.END: cls.END_IDX}
-        
+
         for text in texts:
             for token in text:
                 if token not in token_to_idx:
                     token_to_idx[token] = len(token_to_idx)
 
         return token_to_idx
-    
+
 
 def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size=128) -> DataLoader:
     """Convert a list of texts into a LongTensor.
@@ -488,7 +510,7 @@ def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size
         torch.LongTensor(vocab.encode_text(text, is_target=False))
         for text in texts
     ]
-    
+
     target_tensors = [
         torch.LongTensor(vocab.encode_text(text, is_target=True))
         for text in texts
@@ -498,5 +520,5 @@ def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size
         pad_sequence(input_tensors, batch_first=True, padding_value=vocab.PAD_IDX),
         pad_sequence(target_tensors, batch_first=True, padding_value=vocab.PAD_IDX)
     )
-    
+
     return DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)

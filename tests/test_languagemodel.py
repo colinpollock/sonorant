@@ -1,7 +1,8 @@
-import numpy as np
 import os
-import pytest
 import tempfile
+
+import numpy as np
+import pytest
 import torch
 
 from sonorous.languagemodel import LanguageModel, ModelParams, Vocabulary, build_data_loader
@@ -55,7 +56,7 @@ class TestLanguageModel:
             hidden_dimension=17, num_layers=4, max_epochs=471, early_stopping_rounds=57
         )
         self.lm = LanguageModel(self.vocab, self.model_params, torch.device('cpu'))
-    
+
     def test_layer_dimensions(self):
         """Sanity check that parameters are passed through.
         """
@@ -77,13 +78,13 @@ class TestLanguageModel:
         embeddings = self.lm.embeddings
         assert embeddings.shape == (len(self.vocab), self.model_params.embedding_dimension)
         assert isinstance(embeddings, np.ndarray)
-    
+
     def test_embedding_for(self):
         assert 'a' in self.vocab
         embedding = self.lm.embedding_for('a')
         assert isinstance(embedding, np.ndarray)
         assert embedding.shape == (1, self.model_params.embedding_dimension)
-    
+
 
     def test_probabilities(self):
         text = ('a', 'b', 'c')
@@ -98,21 +99,21 @@ class TestLanguageModel:
 
         perplexity = self.lm.perplexity_of_text(text)
         assert perplexity == pytest.approx(total_probability ** -(1/3))
-    
-    
+
+
     def test_next_probabilities(self):
         text = ('a', 'b')
         next_probabilities = self.lm.next_probabilities(text)
         assert set(next_probabilities) == self.vocab.tokens
         total_prob = sum(next_probabilities.values())
         assert total_prob == pytest.approx(1)
-    
+
     def test_generate(self):
         generated_text = self.lm.generate(3)
         assert isinstance(generated_text, tuple)
         assert all(token in self.vocab for token in generated_text)
-    
-    
+
+
     def test_evaluate(self):
         _, vocab = _dummy_texts_and_vocab()
         dev_texts = [
@@ -124,7 +125,7 @@ class TestLanguageModel:
         dev_loader = build_data_loader(dev_texts, vocab)
         dev_loss = self.lm.evaluate(dev_loader)
         assert dev_loss >= 0
-    
+
     def test_save_and_load(self):
         fd, path = tempfile.mkstemp()
 
@@ -135,7 +136,7 @@ class TestLanguageModel:
             LanguageModel.load(fh, 'cpu')
 
         os.close(fd)
-    
+
     def test_save_and_load_missing_keys(self):
         fd, path = tempfile.mkstemp()
 
@@ -145,7 +146,7 @@ class TestLanguageModel:
         # Loading the saved data. Deleting a single key.
         with open(path, 'rb') as fh:
             data = torch.load(fh)
-        del data['state_dict']['_encoder.weight'] 
+        del data['state_dict']['_encoder.weight']
         with open(path, 'wb') as fh:
             torch.save(data, fh)
 
@@ -164,7 +165,7 @@ class TestLanguageModel:
         # Loading the saved data. Adding one unexpected key.
         with open(path, 'rb') as fh:
             data = torch.load(fh)
-        data['state_dict']['UNEXPECTED_KEY.weight'] = data['state_dict']['_encoder.weight'] 
+        data['state_dict']['UNEXPECTED_KEY.weight'] = data['state_dict']['_encoder.weight']
         with open(path, 'wb') as fh:
             torch.save(data, fh)
 
@@ -201,7 +202,7 @@ class TestVocab:
             'd e f g'.split()
         ]
         self.vocab = Vocabulary.from_texts(self.texts)
-    
+
     def test_encode_text(self):
         text = ('a', 'b', 'e')
         encoded = self.vocab.encode_text(text)
@@ -233,13 +234,13 @@ class TestVocab:
         assert len(all_tokens) == 7
         assert len(self.vocab.DUMMY_TOKENS) == 3
         assert len(self.vocab) == 7 + 3
-    
+
     def test_getitem(self):
         assert isinstance(self.vocab['a'], int)
 
         with pytest.raises(KeyError):
             self.vocab['zzz']
-    
+
     def test_contains(self):
         assert 'a' in self.vocab
         assert 'zz' not in self.vocab
