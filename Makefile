@@ -1,4 +1,3 @@
-
 mypy:
 	mypy sonorous/ --config-file=mypy.ini
 

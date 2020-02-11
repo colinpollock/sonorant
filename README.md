@@ -1,17 +1,23 @@
 Sonorous
 ========
-This is a language model for English sounds. It's an RNN trained in PyTorch on words from the [CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict), a corpus of phonemic transcriptions of words. Each word is a sequence of [ARPABET](https://en.wikipedia.org/wiki/ARPABET) characters. So for example the word "fish" is /F IH1 SH/.
+This is a language model for English words, but using sounds (phonemes) rather than letters. It's an RNN trained in PyTorch on words from the [CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict), a corpus of phonemic transcriptions of words. Each word is a sequence of [ARPABET](https://en.wikipedia.org/wiki/ARPABET) characters. So for example the word "fish" is /F IH1 SH/ and the word "cough" is /K AA1 F/.
 
-There are a few interesting uses for this model:
-1. Calculate the probability of a given word. For example, the model thinks "bar" is very likely (it seems like English) whereas "pshew" is very unlikely.
-2. Generate novel words. For example, it generated /AO1 R P ER0 AH0 T S/, which might be written as "orperuts".
-3. Construct representations of phonetic properties of sounds. For example, the sounds /B/ and /P/ are both made by stopping air by closing the lips and then opening the lips. /B/ is "voiced", meaning that your vocal chords are vibrating when you make that sound. It's possible to aumatically learn representations for things like "voiced" and then add them to voiceless phonemes. For example, VOICED + /P/ is /B/, VOICED + /F/ is /V/, etc.
+There are a few places you might want to look:
+- The Jupyter notebook `Model Training.ipynb` to see how the language model over phonemes was trained.
+- The Jupyter notebook `Phoneme Exploration.ipynb` to a trained model. I cover (a) what are the most- and least-Englishy words, (b) generating novel words, and (c) probing the model to see whether it really learned English phonotactics.
+- The Python module sonorous/languagemodel.py contains the actual PyTorch language model. It has some nice helper methods and is well tested. See the section Language Model below for more on how to use it.
 
+If you want to run these examples follow the instructions in the Setup section below.
 
 ## Setup ##
-1. Create and source a virtualenv. `python -m venv venv && source venv/bin/activate`
-2. Install dependencies. `pip install -r requirements.txt`
-3. Download the CMU dictionary into NLTK. `python -c "import nltk; nltk.download('cmudict')"`
+1. Create and source a virtualenv. `python3 -m venv .venv && source .venv/bin/activate`
+2. Upgrade pip. `'pip install --upgrade pip`
+3. Install dependencies. `pip install -r requirements.txt`
+4. Run tests to make sure everything is working on. `make test`
+5. Start Jupyter notebook server. `jupyter notebook --port=8888`
+
+You can now navigate to localhost:8888/tree in your browser. Open `Model Training.ipynb` or `Phoneme Exploration.ipynb`.
+
 
 ## Related Work ##
 * https://github.com/aparrish/pronouncingpy
