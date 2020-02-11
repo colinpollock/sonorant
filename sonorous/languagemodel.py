@@ -1,11 +1,75 @@
-"""Language model implemented in Torch.
+"""A language model implemented in Torch.
 
-The main class of interest is `LanguageModel`. The model is an RNN (either a
-vanilla RNN, a LSTM, or a GRU). There are a number of options and
-hyperparameters that can be set on the model.
+The main class of interest is `LanguageModel`. It can be trained on a sequence of texts, where each
+text is a tuple of tokens. This means that tokenization needs to happen before interacting with
+LanguageModel. Below is a short walkthrough of everything you'd need from this class.
 
-To train the model you need to pass in a list of train texts, each of which is
-a list of tokens.
+# Import these three classes.
+>>> from sonorous.languagemodel import LanguageModel, ModelParams, Vocabulary
+
+# Define the train and dev texts. Build a `Vocabulary` from the texts, which handles the mapping
+# of tokens like "a" to integer indices.
+>>> train_texts = [("a", "cat", "ate"), ("some", "dogs", "slept")]
+>>> dev_texts = [("some", "cat", "ate"), ("dogs", "slept")]
+>>> vocab = Vocabulary.from_texts(train_texts + dev_texts)
+>>> len(vocab)
+Out[1]: 9
+>>> vocab['a']
+Out[2]: 3
+
+# Define ModelParams, which encapsulate the hyperparameters for a model. This is a useful abstraction
+# that allows parameters to be passed around as a group rather than one by one and aids serialization.
+>>> model_params = ModelParams(
+    rnn_type="gru",
+    embedding_dimension=50,
+    hidden_dimension=30,
+    num_layers=1,
+    max_epochs=2,
+    early_stopping_rounds=5,
+)
+
+# A model is defined by a vocabulary, model parameters, and the name of the device on which it'll run.
+# Any Torch devices will work, but you probably want "cuda" if you're running on a GPU and "cpu"
+otherwise.
+>>> model = LanguageModel(vocab, model_params, device_name="cpu")
+
+# To train a model pass a sequence of train texts and dev texts to the `fit` function. At the end
+# of every epoch the model prints out the loss for the dev set. Note that `max_epochs` and a few
+# other parameters set in `model_params` can be overriddedn by passing them to `fit`.
+>>> train_errors, dev_errors = model.fit(train_texts, dev_texts, max_epochs=10)
+
+# Now I'll run through some basic operations over a trained model.
+
+# You can calculate the perplexity of any text. Perplexity is basically the length normalized,
+# inverse probability.
+# length normalized.
+>>> model.perplexity_of_text(dev_texts[0])
+Out[3]: 14.466998156671036
+
+# You can pass in a tuple of tokens and the model will return a probability distribution over the
+# vocabulary for its predictions of which token will come next.
+>>> model.next_probabilities(("a", "cat"))
+Out[4]:
+{'<PAD>': 0.0008051212062127888,
+ '<START>': 0.004382132086902857,
+ '<END>': 0.010958804748952389,
+ 'a': 0.00777098536491394,
+ 'cat': 0.005946762394160032,
+ 'ate': 0.944864809513092,
+ 'some': 0.00814706552773714,
+ 'dogs': 0.0017555770464241505,
+ 'slept': 0.015368768945336342}
+
+# You can generate novel texts.
+>>> model.generate(max_length=1000)
+Out[5]: ('dogs', 'cat')
+
+# You can save the model to disk and then load it.
+>>> with open('model.pt', 'wb') as fh:
+    model.save(fh)
+
+>>> with open('model.pt', 'rb') as fh:
+    the_same_model = LanguageModel.load(fh, device_name='cpu')
 """
 
 import math
