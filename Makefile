@@ -6,5 +6,5 @@ test:
 	python -m pytest tests/
 
 lint:
-	pylint --rcfile=pylintrc sonorous/
-	pylint --rcfile=pylintrc tests/
+	- pylint --rcfile=pylintrc sonorous/
+	bandit -r sonorous/
