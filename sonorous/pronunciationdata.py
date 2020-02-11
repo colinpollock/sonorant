@@ -21,18 +21,21 @@ def load_pronunciations(include_stress=True):
         for pronunciation in pronunciations:
             if not include_stress:
                 pronunciation = _strip_stress(pronunciation)
-            records.append({'word': word, 'pronunciation': tuple(pronunciation)})
+            records.append({"word": word, "pronunciation": tuple(pronunciation)})
 
-    pronunciations = pd.DataFrame(records).set_index('word')
-    pronunciations['pronunciation_string'] = pronunciations.pronunciation.apply(' '.join)
-    pronunciations['length'] = pronunciations.pronunciation.apply(len)
+    pronunciations = pd.DataFrame(records).set_index("word")
+    pronunciations["pronunciation_string"] = pronunciations.pronunciation.apply(
+        " ".join
+    )
+    pronunciations["length"] = pronunciations.pronunciation.apply(len)
     return pronunciations
+
 
 def _strip_stress(pronunciation):
     new_pronunciation = []
     for phoneme in pronunciation:
-        for stress in '012':
-            phoneme = phoneme.replace(stress, '')
+        for stress in "012":
+            phoneme = phoneme.replace(stress, "")
         new_pronunciation.append(phoneme)
 
     return new_pronunciation

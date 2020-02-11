@@ -20,8 +20,13 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
-from sonorous.utils import get_rnn_model_by_name, get_torch_device_by_name, has_decreased, \
-    count_origins, perplexity
+from sonorous.utils import (
+    get_rnn_model_by_name,
+    get_torch_device_by_name,
+    has_decreased,
+    count_origins,
+    perplexity,
+)
 
 
 class ModelParams(NamedTuple):
@@ -42,6 +47,7 @@ class ModelParams(NamedTuple):
     - l2_strength: L2 regularization strength. Default of 0 is no regularization.
     - batch_size: defaults to 1024
     """
+
     rnn_type: str
     embedding_dimension: int
     hidden_dimension: int
@@ -58,10 +64,7 @@ class LanguageModel(nn.Module):
     """A trainable model built on top of PyTorch."""
 
     def __init__(
-            self,
-            vocab: 'Vocabulary',
-            model_params: ModelParams,
-            device_name: Optional[str]
+        self, vocab: "Vocabulary", model_params: ModelParams, device_name: Optional[str]
     ):
         super(LanguageModel, self).__init__()
 
@@ -77,7 +80,7 @@ class LanguageModel(nn.Module):
             input_size=model_params.embedding_dimension,
             hidden_size=model_params.hidden_dimension,
             num_layers=model_params.num_layers,
-            batch_first=True
+            batch_first=True,
         )
 
         self._decoder = nn.Linear(model_params.hidden_dimension, len(self.vocab))
@@ -94,14 +97,14 @@ class LanguageModel(nn.Module):
         return self._decoder(rnn_output), new_hidden_state
 
     def fit(
-            self,
-            train_texts: Sequence[Tuple[str]],
-            dev_texts: Sequence[Tuple[str]] = None,
-            learning_rate: float = None,
-            max_epochs: int = None,
-            early_stopping_rounds: int = None,
-            batch_size: int = None,
-            show_generated: bool = True,
+        self,
+        train_texts: Sequence[Tuple[str]],
+        dev_texts: Sequence[Tuple[str]] = None,
+        learning_rate: float = None,
+        max_epochs: int = None,
+        early_stopping_rounds: int = None,
+        batch_size: int = None,
+        show_generated: bool = True,
     ) -> Tuple[List[float], List[float]]:
         """Fit the model to the training data.
 
@@ -125,22 +128,28 @@ class LanguageModel(nn.Module):
         """
         # Set None parameters passed in to the their default values in `self`.
         learning_rate = (
-            learning_rate if learning_rate is not None
+            learning_rate
+            if learning_rate is not None
             else self.model_params.learning_rate
         )
-        max_epochs = max_epochs if max_epochs is not None else self.model_params.max_epochs
+        max_epochs = (
+            max_epochs if max_epochs is not None else self.model_params.max_epochs
+        )
         early_stopping_rounds = (
-            early_stopping_rounds if early_stopping_rounds is not None
+            early_stopping_rounds
+            if early_stopping_rounds is not None
             else self.model_params.early_stopping_rounds
         )
-        batch_size = batch_size if batch_size is not None else self.model_params.batch_size
+        batch_size = (
+            batch_size if batch_size is not None else self.model_params.batch_size
+        )
 
         self.to(self.device)
 
         optimizer = Adam(
             self.parameters(),
             lr=learning_rate,
-            weight_decay=self.model_params.l2_strength
+            weight_decay=self.model_params.l2_strength,
         )
         criterion = nn.CrossEntropyLoss()
 
@@ -153,8 +162,8 @@ class LanguageModel(nn.Module):
         for epoch in range(1, max_epochs + 1):
             if not has_decreased(train_losses, early_stopping_rounds):
                 print(
-                    f'Early stopping because of no decrease in {early_stopping_rounds} epochs.',
-                    file=sys.stderr
+                    f"Early stopping because of no decrease in {early_stopping_rounds} epochs.",
+                    file=sys.stderr,
                 )
                 break
 
@@ -172,38 +181,38 @@ class LanguageModel(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    'Epoch {}; Batch {} of {}; loss: {:.4f}'.format(
-                        epoch,
-                        batch_num,
-                        len(train_loader),
-                        loss.item()
+                    "Epoch {}; Batch {} of {}; loss: {:.4f}".format(
+                        epoch, batch_num, len(train_loader), loss.item()
                     ),
-                    end='\r'
+                    end="\r",
                 )
 
             train_loss = self.evaluate(train_loader)
             train_losses.append(train_loss)
-            status = f'Epoch {epoch}: train loss: {train_loss:.4f}'
+            status = f"Epoch {epoch}: train loss: {train_loss:.4f}"
 
             if dev_texts is not None:
                 dev_loss = self.evaluate(dev_loader)
                 dev_losses.append(dev_loss)
-                status += f'\tdev loss: {dev_loss:.4f}'
+                status += f"\tdev loss: {dev_loss:.4f}"
 
             print(status)
 
             generated_texts = [self.generate(1000) for _ in range(100)]
 
-            percent_train_origin, percent_dev_origin, percent_novel_origin =  \
-                count_origins(generated_texts, train_texts, dev_texts or [])
+            (
+                percent_train_origin,
+                percent_dev_origin,
+                percent_novel_origin,
+            ) = count_origins(generated_texts, train_texts, dev_texts or [])
             print(
-                f'\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, '
-                f'novel: {percent_novel_origin}%'
+                f"\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, "
+                f"novel: {percent_novel_origin}%"
             )
 
             if show_generated:
                 for text in generated_texts[:5]:
-                    print('\t', ' '.join(text))
+                    print("\t", " ".join(text))
 
         return train_losses, dev_losses
 
@@ -219,7 +228,7 @@ class LanguageModel(nn.Module):
         """
         self.eval()
 
-        criterion = nn.CrossEntropyLoss(reduction='sum')
+        criterion = nn.CrossEntropyLoss(reduction="sum")
         loss = 0.0
         total_tokens = 0
 
@@ -283,8 +292,9 @@ class LanguageModel(nn.Module):
             for idx, probability in enumerate(next_token_probabilities)
         }
 
-
-    def conditional_probabilities_of_text(self, text: Tuple[str, ...]) -> Tuple[float, ...]:
+    def conditional_probabilities_of_text(
+        self, text: Tuple[str, ...]
+    ) -> Tuple[float, ...]:
         """Returns the probability of each token in `text`.
 
         If `text` has two tokens (t1 and t2) then the returned tuple will be of length 3:
@@ -331,7 +341,6 @@ class LanguageModel(nn.Module):
         probability = self.probability_of_text(text)
         return perplexity(probability, len(text))
 
-
     def embedding_for(self, token: str):
         """Return the embedding for the specified phoneme.
 
@@ -343,7 +352,11 @@ class LanguageModel(nn.Module):
         self.eval()
         with torch.no_grad():
             token_idx = self.vocab[token]
-            return self._encoder(torch.LongTensor([token_idx]).to(self.device)).cpu().numpy()
+            return (
+                self._encoder(torch.LongTensor([token_idx]).to(self.device))
+                .cpu()
+                .numpy()
+            )
 
     @property
     def embeddings(self):
@@ -353,20 +366,20 @@ class LanguageModel(nn.Module):
     def save(self, file_handle):
         """Save a file to disk."""
         data = {
-            'token_to_idx': self.vocab.token_to_idx,
-            'model_params': self.model_params._asdict(),
-            'state_dict': self.state_dict()
+            "token_to_idx": self.vocab.token_to_idx,
+            "model_params": self.model_params._asdict(),
+            "state_dict": self.state_dict(),
         }
 
         torch.save(data, file_handle)
 
     @staticmethod
-    def load(file_handle, device_name: str) -> 'LanguageModel':
+    def load(file_handle, device_name: str) -> "LanguageModel":
         """Load a model from disk that has been saved using the `save` method."""
         data = torch.load(file_handle)
-        vocab = Vocabulary(data['token_to_idx'])
-        model_params = ModelParams(**data['model_params'])
-        state_dict = data['state_dict']
+        vocab = Vocabulary(data["token_to_idx"])
+        model_params = ModelParams(**data["model_params"])
+        state_dict = data["state_dict"]
 
         model = LanguageModel(vocab, model_params, device_name)
         model.load_state_dict(state_dict)
@@ -389,9 +402,10 @@ class Vocabulary:
     >>> vocab.token_from_idx(vocab['b'])
     'b'
     """
-    PAD = '<PAD>'
-    START = '<START>'
-    END = '<END>'
+
+    PAD = "<PAD>"
+    START = "<START>"
+    END = "<END>"
     DUMMY_TOKENS = (PAD, START, END)
     PAD_IDX = 0
     START_IDX = 1
@@ -400,9 +414,7 @@ class Vocabulary:
     def __init__(self, token_to_idx: Dict[str, int]):
         self.token_to_idx = token_to_idx
 
-        self._idx_to_token = {
-            idx: token for (token, idx) in token_to_idx.items()
-        }
+        self._idx_to_token = {idx: token for (token, idx) in token_to_idx.items()}
 
         # Note that this only works because a Vocabulary is immutable
         # and no tokens can be added outside of __init__.
@@ -410,7 +422,7 @@ class Vocabulary:
         self.indices = set(self._idx_to_token)
 
     @classmethod
-    def from_texts(cls, texts: Sequence[Tuple[str]]) -> 'Vocabulary':
+    def from_texts(cls, texts: Sequence[Tuple[str]]) -> "Vocabulary":
         """Initialize a `Vocabulary` from a Sequence of texts."""
         token_to_idx = cls._build_token_to_idx(texts)
         return Vocabulary(token_to_idx)
@@ -481,7 +493,11 @@ class Vocabulary:
             raise ValueError(f"Input text contains a reserved dummy token")
         tokens.update(cls.DUMMY_TOKENS)
 
-        token_to_idx = {cls.PAD: cls.PAD_IDX, cls.START: cls.START_IDX, cls.END: cls.END_IDX}
+        token_to_idx = {
+            cls.PAD: cls.PAD_IDX,
+            cls.START: cls.START_IDX,
+            cls.END: cls.END_IDX,
+        }
 
         for text in texts:
             for token in text:
@@ -491,7 +507,9 @@ class Vocabulary:
         return token_to_idx
 
 
-def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size=128) -> DataLoader:
+def build_data_loader(
+    texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size=128
+) -> DataLoader:
     """Convert a list of texts into a LongTensor.
 
     Args:
@@ -507,18 +525,16 @@ def build_data_loader(texts: Sequence[Tuple[str]], vocab: Vocabulary, batch_size
       target: K AE T <END> <PAD>
     """
     input_tensors = [
-        torch.LongTensor(vocab.encode_text(text, is_target=False))
-        for text in texts
+        torch.LongTensor(vocab.encode_text(text, is_target=False)) for text in texts
     ]
 
     target_tensors = [
-        torch.LongTensor(vocab.encode_text(text, is_target=True))
-        for text in texts
+        torch.LongTensor(vocab.encode_text(text, is_target=True)) for text in texts
     ]
 
     dataset = TensorDataset(
         pad_sequence(input_tensors, batch_first=True, padding_value=vocab.PAD_IDX),
-        pad_sequence(target_tensors, batch_first=True, padding_value=vocab.PAD_IDX)
+        pad_sequence(target_tensors, batch_first=True, padding_value=vocab.PAD_IDX),
     )
 
     return DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)

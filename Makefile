@@ -5,6 +5,9 @@ mypy:
 test:
 	python -m pytest tests/
 
+black:
+	black sonorous tests
+
 lint:
-	- pylint --rcfile=pylintrc sonorous/
-	bandit -r sonorous/
+	flake8 sonorous tests
+	bandit -r sonorous

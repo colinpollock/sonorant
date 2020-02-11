@@ -5,7 +5,12 @@ import numpy as np
 import pytest
 import torch
 
-from sonorous.languagemodel import LanguageModel, ModelParams, Vocabulary, build_data_loader
+from sonorous.languagemodel import (
+    LanguageModel,
+    ModelParams,
+    Vocabulary,
+    build_data_loader,
+)
 
 
 def test_build_data_loader():
@@ -24,17 +29,17 @@ def test_build_data_loader():
         return vocab[token]
 
     assert input_tensors.tolist() == [
-        [vocab.START_IDX, f('a'), f('b'), vocab.END_IDX, vocab.PAD_IDX],
-        [vocab.START_IDX, f('b'), f('c'), f('d'), vocab.END_IDX],
-        [vocab.START_IDX, f('a'), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
-        [vocab.START_IDX, f('a'), f('c'), vocab.END_IDX, vocab.PAD_IDX],
+        [vocab.START_IDX, f("a"), f("b"), vocab.END_IDX, vocab.PAD_IDX],
+        [vocab.START_IDX, f("b"), f("c"), f("d"), vocab.END_IDX],
+        [vocab.START_IDX, f("a"), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
+        [vocab.START_IDX, f("a"), f("c"), vocab.END_IDX, vocab.PAD_IDX],
     ]
 
     assert target_tensors.tolist() == [
-        [f('a'), f('b'), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
-        [f('b'), f('c'), f('d'), vocab.END_IDX, vocab.PAD_IDX,],
-        [f('a'), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
-        [f('a'), f('c'), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX]
+        [f("a"), f("b"), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
+        [f("b"), f("c"), f("d"), vocab.END_IDX, vocab.PAD_IDX,],
+        [f("a"), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
+        [f("a"), f("c"), vocab.END_IDX, vocab.PAD_IDX, vocab.PAD_IDX],
     ]
 
     # Make sure that the first batch in the loader looks right.
@@ -46,16 +51,20 @@ def test_build_data_loader():
 
 class TestLanguageModel:
     """Some sanity checks of an instantiated but unfit LanguageModel."""
+
     def setup(self):
         self.texts, self.vocab = _dummy_texts_and_vocab()
 
         # Using weird numbers to minimize the chance that these are defaults.
         self.model_params = ModelParams(
-            rnn_type='lstm',
+            rnn_type="lstm",
             embedding_dimension=13,
-            hidden_dimension=17, num_layers=4, max_epochs=471, early_stopping_rounds=57
+            hidden_dimension=17,
+            num_layers=4,
+            max_epochs=471,
+            early_stopping_rounds=57,
         )
-        self.lm = LanguageModel(self.vocab, self.model_params, torch.device('cpu'))
+        self.lm = LanguageModel(self.vocab, self.model_params, torch.device("cpu"))
 
     def test_layer_dimensions(self):
         """Sanity check that parameters are passed through.
@@ -76,18 +85,20 @@ class TestLanguageModel:
 
     def test_embeddings(self):
         embeddings = self.lm.embeddings
-        assert embeddings.shape == (len(self.vocab), self.model_params.embedding_dimension)
+        assert embeddings.shape == (
+            len(self.vocab),
+            self.model_params.embedding_dimension,
+        )
         assert isinstance(embeddings, np.ndarray)
 
     def test_embedding_for(self):
-        assert 'a' in self.vocab
-        embedding = self.lm.embedding_for('a')
+        assert "a" in self.vocab
+        embedding = self.lm.embedding_for("a")
         assert isinstance(embedding, np.ndarray)
         assert embedding.shape == (1, self.model_params.embedding_dimension)
 
-
     def test_probabilities(self):
-        text = ('a', 'b', 'c')
+        text = ("a", "b", "c")
         probabilities = self.lm.conditional_probabilities_of_text(text)
 
         # There should be four probabilities: P(a|start), P(b|start a), P(c|start a b), P(end|start a b c)
@@ -98,11 +109,10 @@ class TestLanguageModel:
         assert np.prod(probabilities) == pytest.approx(total_probability)
 
         perplexity = self.lm.perplexity_of_text(text)
-        assert perplexity == pytest.approx(total_probability ** -(1/3))
-
+        assert perplexity == pytest.approx(total_probability ** -(1 / 3))
 
     def test_next_probabilities(self):
-        text = ('a', 'b')
+        text = ("a", "b")
         next_probabilities = self.lm.next_probabilities(text)
         assert set(next_probabilities) == self.vocab.tokens
         total_prob = sum(next_probabilities.values())
@@ -113,14 +123,9 @@ class TestLanguageModel:
         assert isinstance(generated_text, tuple)
         assert all(token in self.vocab for token in generated_text)
 
-
     def test_evaluate(self):
         _, vocab = _dummy_texts_and_vocab()
-        dev_texts = [
-            ('a', 'b', 'c'),
-            ('b', 'a', 'b', 'b'),
-            ('d', 'a')
-        ]
+        dev_texts = [("a", "b", "c"), ("b", "a", "b", "b"), ("d", "a")]
 
         dev_loader = build_data_loader(dev_texts, vocab)
         dev_loss = self.lm.evaluate(dev_loader)
@@ -129,49 +134,51 @@ class TestLanguageModel:
     def test_save_and_load(self):
         fd, path = tempfile.mkstemp()
 
-        with open(path, 'wb') as fh:
+        with open(path, "wb") as fh:
             self.lm.save(fh)
 
-        with open(path, 'rb') as fh:
-            LanguageModel.load(fh, 'cpu')
+        with open(path, "rb") as fh:
+            LanguageModel.load(fh, "cpu")
 
         os.close(fd)
 
     def test_save_and_load_missing_keys(self):
         fd, path = tempfile.mkstemp()
 
-        with open(path, 'wb') as fh:
+        with open(path, "wb") as fh:
             self.lm.save(fh)
 
         # Loading the saved data. Deleting a single key.
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             data = torch.load(fh)
-        del data['state_dict']['_encoder.weight']
-        with open(path, 'wb') as fh:
+        del data["state_dict"]["_encoder.weight"]
+        with open(path, "wb") as fh:
             torch.save(data, fh)
 
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             with pytest.raises(RuntimeError):
-                LanguageModel.load(fh, 'cpu')
+                LanguageModel.load(fh, "cpu")
 
         os.close(fd)
 
     def test_save_and_load_unexpected_keys(self):
         fd, path = tempfile.mkstemp()
 
-        with open(path, 'wb') as fh:
+        with open(path, "wb") as fh:
             self.lm.save(fh)
 
         # Loading the saved data. Adding one unexpected key.
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             data = torch.load(fh)
-        data['state_dict']['UNEXPECTED_KEY.weight'] = data['state_dict']['_encoder.weight']
-        with open(path, 'wb') as fh:
+        data["state_dict"]["UNEXPECTED_KEY.weight"] = data["state_dict"][
+            "_encoder.weight"
+        ]
+        with open(path, "wb") as fh:
             torch.save(data, fh)
 
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             with pytest.raises(RuntimeError):
-                LanguageModel.load(fh, 'cpu')
+                LanguageModel.load(fh, "cpu")
 
         os.close(fd)
 
@@ -181,10 +188,15 @@ def test_fit_language_model():
     texts, vocab = _dummy_texts_and_vocab()
 
     model_params = ModelParams(
-        rnn_type='lstm', embedding_dimension=10, hidden_dimension=10, num_layers=1, max_epochs=1, early_stopping_rounds=1
+        rnn_type="lstm",
+        embedding_dimension=10,
+        hidden_dimension=10,
+        num_layers=1,
+        max_epochs=1,
+        early_stopping_rounds=1,
     )
 
-    lm = LanguageModel(vocab, model_params, torch.device('cpu'))
+    lm = LanguageModel(vocab, model_params, torch.device("cpu"))
     params_before = [param.detach().tolist() for param in lm.parameters()]
     lm.fit(texts)
     params_after = [param.detach().tolist() for param in lm.parameters()]
@@ -196,36 +208,32 @@ def test_fit_language_model():
 
 class TestVocab:
     def setup(self):
-        self.texts = [
-            'a b c'.split(),
-            'a b d'.split(),
-            'd e f g'.split()
-        ]
+        self.texts = ["a b c".split(), "a b d".split(), "d e f g".split()]
         self.vocab = Vocabulary.from_texts(self.texts)
 
     def test_encode_text(self):
-        text = ('a', 'b', 'e')
+        text = ("a", "b", "e")
         encoded = self.vocab.encode_text(text)
 
         # Number of tokens plus START and END.
         assert len(encoded) == 5
 
         assert encoded[0] == self.vocab.START_IDX
-        assert encoded[1] == self.vocab['a']
-        assert encoded[2] == self.vocab['b']
-        assert encoded[3] == self.vocab['e']
+        assert encoded[1] == self.vocab["a"]
+        assert encoded[2] == self.vocab["b"]
+        assert encoded[3] == self.vocab["e"]
         assert encoded[4] == self.vocab.END_IDX
 
     def test_encode_text_as_target(self):
-        text = ('a', 'b', 'e')
+        text = ("a", "b", "e")
         encoded = self.vocab.encode_text(text, is_target=True)
 
         # Number of tokens plus END and PAD
         assert len(encoded) == 5
 
-        assert encoded[0] == self.vocab['a']
-        assert encoded[1] == self.vocab['b']
-        assert encoded[2] == self.vocab['e']
+        assert encoded[0] == self.vocab["a"]
+        assert encoded[1] == self.vocab["b"]
+        assert encoded[2] == self.vocab["e"]
         assert encoded[3] == self.vocab.END_IDX
         assert encoded[4] == self.vocab.PAD_IDX
 
@@ -236,26 +244,22 @@ class TestVocab:
         assert len(self.vocab) == 7 + 3
 
     def test_getitem(self):
-        assert isinstance(self.vocab['a'], int)
+        assert isinstance(self.vocab["a"], int)
 
         with pytest.raises(KeyError):
-            self.vocab['zzz']
+            self.vocab["zzz"]
 
     def test_contains(self):
-        assert 'a' in self.vocab
-        assert 'zz' not in self.vocab
+        assert "a" in self.vocab
+        assert "zz" not in self.vocab
 
     def test_token_from_idx(self):
-        a_idx = self.vocab['a']
-        assert self.vocab.token_from_idx(a_idx) == 'a'
+        a_idx = self.vocab["a"]
+        assert self.vocab.token_from_idx(a_idx) == "a"
+
 
 def _dummy_texts_and_vocab():
     # TODO: make fixture
-    texts = [
-        ('a', 'b'),
-        ('b', 'c', 'd'),
-        ('a',),
-        ('a', 'c')
-    ]
+    texts = [("a", "b"), ("b", "c", "d"), ("a",), ("a", "c")]
 
     return texts, Vocabulary.from_texts(texts)
