@@ -479,7 +479,7 @@ class Vocabulary:
         return len(self.token_to_idx)
 
     @classmethod
-    def _build_token_to_idx(cls, texts: List[List[str]]) -> Dict[str, int]:
+    def _build_token_to_idx(cls, texts: Sequence[Tuple[str]]) -> Dict[str, int]:
         """Build a token-to-index dictionary.
 
         Args:
