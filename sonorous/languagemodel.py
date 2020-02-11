@@ -33,7 +33,7 @@ class ModelParams(NamedTuple):
     """Holder of hyperparameters for a model.
 
     - rnn_type: a string indicating the type of RNN ('rnn', 'lstm', 'gru').
-    - embedding_dimension: the length of each phoneme's embedding vector.
+    - embedding_dimension: the length of each token's embedding vector.
     - hidden_dimension: the size of the RNN/LSTM/GRU's hidden layer.
     - num_layers: number of layers in the RNN. Defaults to 1.
     - max_epochs: the maximum number of epochs to train for. Note that this an
@@ -247,7 +247,7 @@ class LanguageModel(nn.Module):
         """Generate a new text.
 
         Args:
-        - max_length: the maximum number of phonemes to generate.
+        - max_length: the maximum number of tokens to generate.
 
         Returns: a tuple of tokens.
         """
@@ -278,7 +278,7 @@ class LanguageModel(nn.Module):
         Args:
         - text: a sequence of tokens.
 
-        Returns: a dict mapping each phoneme in the vocabulary to a probability.
+        Returns: a dict mapping each token in the vocabulary to a probability.
         """
         # Dropping the final token, which is the END token.
         encoded = self.vocab.encode_text(text)[:-1]
@@ -308,7 +308,7 @@ class LanguageModel(nn.Module):
 
         # At each step a distribution over all tokens is output. This represents
         # the model's predictions for what the next token will be. We pull out
-        # the probability for whatever the next phoneme actually is, and end up
+        # the probability for whatever the next token actually is, and end up
         # with the probabilities for each of the actual tokens. Through the
         # chain rule we can get the overall probability for the full text.
         probabilities = []
@@ -342,10 +342,10 @@ class LanguageModel(nn.Module):
         return perplexity(probability, len(text))
 
     def embedding_for(self, token: str):
-        """Return the embedding for the specified phoneme.
+        """Return the embedding for the specified token.
 
         Args:
-        - phoneme: an ARPABET phoneme
+        - token: a string present in `self.vocab`.
 
         Returns: a 1x`embedding_dimension` NumPy array.
         """
@@ -438,7 +438,7 @@ class Vocabulary:
         the target since it offsets each target token by one and lines up the
         RNN's prediction for the next token with the target.
 
-        Returns: a NumPy array of ints representing each phoneme.
+        Returns: a NumPy array of ints representing each token.
         """
         if is_target is True:
             with_boundaries = text + (self.END, self.PAD)
