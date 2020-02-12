@@ -471,7 +471,7 @@ class Vocabulary:
     PAD = "<PAD>"
     START = "<START>"
     END = "<END>"
-    DUMMY_TOKENS = (PAD, START, END)
+    DUMMY_TOKENS = {PAD, START, END}
     PAD_IDX = 0
     START_IDX = 1
     END_IDX = 2
