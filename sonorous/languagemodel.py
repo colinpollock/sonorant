@@ -17,8 +17,9 @@ Out[1]: 9
 >>> vocab['a']
 Out[2]: 3
 
-# Define ModelParams, which encapsulate the hyperparameters for a model. This is a useful abstraction
-# that allows parameters to be passed around as a group rather than one by one and aids serialization.
+# Define ModelParams, which encapsulate the hyperparameters for a model. This is a useful
+# abstraction that allows parameters to be passed around as a group rather than one by one and aids
+# serialization.
 >>> model_params = ModelParams(
     rnn_type="gru",
     embedding_dimension=50,
@@ -28,9 +29,9 @@ Out[2]: 3
     early_stopping_rounds=5,
 )
 
-# A model is defined by a vocabulary, model parameters, and the name of the device on which it'll run.
-# Any Torch devices will work, but you probably want "cuda" if you're running on a GPU and "cpu"
-otherwise.
+# A model is defined by a vocabulary, model parameters, and the name of the device on which it'll
+# run. Any Torch devices will work, but you probably want "cuda" if you're running on a GPU and
+# "cpu" otherwise.
 >>> model = LanguageModel(vocab, model_params, device_name="cpu")
 
 # To train a model pass a sequence of train texts and dev texts to the `fit` function. At the end
