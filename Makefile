@@ -1,5 +1,5 @@
 mypy:
-	mypy sonorous/ --config-file=mypy.ini
+	mypy sonorous/ --config-file=.mypy.ini
 
 test:
 	python -m pytest tests/
