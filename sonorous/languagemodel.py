@@ -169,23 +169,21 @@ class LanguageModel(nn.Module):
         max_epochs: int = None,
         early_stopping_rounds: int = None,
         batch_size: int = None,
-        show_generated: bool = True,
+        print_every: int = 1,
     ) -> Tuple[List[float], List[float]]:
         """Fit the model to the training data.
 
         Args:
-        - train_texts: list of lists of tokens. If the vocabulary is words then
-          it would look like this: [["a", "cat"], ["the", "dog", ...]].
-        - dev_texts: same format as `train_texts`, but used for printing out
-          dev set errors during testing.
+        - train_texts: list of lists of tokens. If the vocabulary is words then it would look like
+          this: [["a", "cat"], ["the", "dog", ...]].
+        - dev_texts: same format as `train_texts`, but used for printing out dev set errors during
+          testing.
         - learning_rate: learning rate. Defaults to self.model_params.learning_rate if None.
-        - max_epochs: the maximum number of epochs to train for. Defaults to
-          self.max_epochs.
-        - early_stopping_rounds: The model will train until the dev score stops
-          improving. Train error needs to decrease at least every
-          early_stopping_rounds to continue training.
+        - max_epochs: the maximum number of epochs to train for. Defaults to self.max_epochs.
+        - early_stopping_rounds: The model will train until the dev score stops improving. Train
+          error needs to decrease at least every early_stopping_rounds to continue training.
         - batch_size: batch size for both train and assess. Defaults to self.batch_size.
-        - show_generated: whether to print out generated pronunciations after each
+        - print_every: how often to print a status line showing metrics. Defaults to printing every
           epoch.
 
         Returns a pair (train_losses: float, dev_losses: float), which are the
@@ -219,8 +217,11 @@ class LanguageModel(nn.Module):
         criterion = nn.CrossEntropyLoss()
 
         train_loader = build_data_loader(train_texts, self.vocab, batch_size)
-        if dev_texts is not None:
-            dev_loader = build_data_loader(dev_texts, self.vocab, batch_size)
+        dev_loader = (
+            build_data_loader(dev_texts, self.vocab, batch_size)
+            if dev_texts is not None
+            else None
+        )
 
         train_losses: List[float] = []
         dev_losses = []
@@ -252,15 +253,39 @@ class LanguageModel(nn.Module):
                     end="\r",
                 )
 
-            train_loss = self.evaluate(train_loader)
+            print_status = epoch % print_every == 0 or epoch == max_epochs
+            train_loss, dev_loss = self._eval_and_print(
+                epoch, train_texts, train_loader, dev_texts, dev_loader, print_status
+            )
             train_losses.append(train_loss)
-            status = f"Epoch {epoch}: train loss: {train_loss:.4f}"
+            dev_losses.append(dev_loss)
 
-            if dev_texts is not None:
-                dev_loss = self.evaluate(dev_loader)
-                dev_losses.append(dev_loss)
-                status += f"\tdev loss: {dev_loss:.4f}"
+        return train_losses, dev_losses
 
+    def _eval_and_print(
+        self,
+        epoch: int,
+        train_texts: Sequence[Tuple[str, ...]],
+        train_loader: DataLoader,
+        dev_texts: Optional[Sequence[Tuple[str, ...]]] = None,
+        dev_loader: Optional[DataLoader] = None,
+        print_status: Optional[bool] = True,
+    ) -> Tuple[float, float]:
+        """Method to print out training progress, useful after an epoch has completed.
+
+        It returns the loss against the training and dev sets, and if `print_status` is True also
+        prints out those losses and shows some examples of what the model generates.
+        """
+        train_loss = self.evaluate(train_loader)
+        status = f"Epoch {epoch}: train loss: {train_loss:.4f}"
+
+        if dev_loader is not None:
+            dev_loss = self.evaluate(dev_loader)
+            status += f"\tdev loss: {dev_loss:.4f}"
+        else:
+            dev_loss = None
+
+        if print_status:
             print(status)
 
             generated_texts = [self.generate(1000) for _ in range(100)]
@@ -270,16 +295,16 @@ class LanguageModel(nn.Module):
                 percent_dev_origin,
                 percent_novel_origin,
             ) = count_origins(generated_texts, train_texts, dev_texts or [])
+
             print(
                 f"\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, "
                 f"novel: {percent_novel_origin}%"
             )
 
-            if show_generated:
-                for text in generated_texts[:5]:
-                    print("\t", " ".join(text))
+            for text in generated_texts[:5]:
+                print("\t", " ".join(text))
 
-        return train_losses, dev_losses
+        return train_loss, dev_loss
 
     def evaluate(self, loader: DataLoader) -> float:
         """Compute the average entropy per symbol on the input loader.
