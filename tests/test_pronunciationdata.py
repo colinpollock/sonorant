@@ -3,6 +3,7 @@ from pandas import DataFrame
 from sonorous.pronunciationdata import (
     SYLLABIC_PHONEMES,
     augment_pronunciations_df,
+    count_primary_stressed_syllables,
     count_syllables,
     load_pronunciations,
 )
@@ -18,6 +19,7 @@ def test_load_data():
     assert cat.pronunciation == ("K", "AE1", "T")
     assert cat.num_phonemes == 3
     assert cat.num_syllables == 1
+    assert cat.num_primary_stressed_syllables == 1
 
 
 def test_get_all_syllabic_phonemes():
@@ -39,6 +41,11 @@ def test_count_syllables():
     assert count_syllables(("F", "ER1")) == 1
 
 
+def test_count_primary_stressed_syllables():
+    assert count_primary_stressed_syllables(("K", "AE1", "F", "ER0")) == 1
+    assert count_primary_stressed_syllables(("EY1", "AY1")) == 2
+
+
 def test_augment_pronunciations_df():
     pronunciations = DataFrame({"pronunciation": [("R", "EH1", "DJ", "IY0")]})
     augment_pronunciations_df(pronunciations)
@@ -46,3 +53,4 @@ def test_augment_pronunciations_df():
     reggie = pronunciations.iloc[0]
     assert reggie["num_phonemes"] == 4
     assert reggie["num_syllables"] == 2
+

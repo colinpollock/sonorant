@@ -41,6 +41,10 @@ def augment_pronunciations_df(pronunciations: DataFrame) -> None:
         count_syllables
     )
 
+    pronunciations[
+        "num_primary_stressed_syllables"
+    ] = pronunciations.pronunciation.apply(count_primary_stressed_syllables)
+
 
 def get_syllabic_phonemes() -> Set[str]:
     """Return a set of all phonemes that are syllabic.
@@ -68,3 +72,12 @@ def count_syllables(pronunciation: Tuple[str, ...]) -> int:
     """
     counts = Counter(pronunciation)
     return sum(counts[vowel] for vowel in SYLLABIC_PHONEMES)
+
+
+def count_primary_stressed_syllables(pronunciation: Tuple[str, ...]) -> int:
+    """Return the number of syllables with primary stress.
+
+    Typically words only have one syllable with primary stress, but compound words or acronyms will
+    break that rule. For example, "ai" is /EY1 AY1/ because it's said as two words.
+    """
+    return sum(1 for phoneme in pronunciation if phoneme.endswith("1"))
