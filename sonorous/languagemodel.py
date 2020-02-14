@@ -308,11 +308,13 @@ class LanguageModel(nn.Module):
 
         return loss / total_tokens
 
-    def generate(self, max_length: int) -> Tuple[str, ...]:
+    def generate(self, max_length: int, temperature: float = 1) -> Tuple[str, ...]:
         """Generate a new text.
 
         Args:
         - max_length: the maximum number of tokens to generate.
+        - temperature: higher will increase diversity, lower will more often select the top
+          probability tokens. Defaults to 1, which has no effect.
 
         Returns: a tuple of tokens.
         """
@@ -325,7 +327,7 @@ class LanguageModel(nn.Module):
         for _ in range(max_length):
             input_ = torch.LongTensor([token_idx]).unsqueeze(0)
             output, hidden_state = self(input_, hidden_state)
-            probabilities = F.softmax(output.squeeze(), dim=0)
+            probabilities = F.softmax(output.squeeze().div(temperature), dim=0)
 
             token_idx = int(torch.multinomial(probabilities, 1).item())
             token = self.vocab.token_from_idx(token_idx)
