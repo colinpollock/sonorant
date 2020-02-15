@@ -1,6 +1,5 @@
 bandit==1.6.2
 black==19.10b0
-cmudict==0.4.4
 flake8==3.7.9
 jupyter==1.0.0
 jupyter-contrib-nbextensions==0.5.1
