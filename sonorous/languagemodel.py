@@ -247,8 +247,8 @@ class LanguageModel(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    "Epoch {}; Batch {} of {}; loss: {:.4f}".format(
-                        epoch, batch_num, len(train_loader), loss.item()
+                    "Epoch {}; Batch {} of {}; loss: {:.4f}{}".format(
+                        epoch, batch_num, len(train_loader), loss.item(), " " * 100
                     ),
                     end="\r",
                 )
@@ -275,6 +275,8 @@ class LanguageModel(nn.Module):
 
         It returns the loss against the training and dev sets, and if `print_status` is True also
         prints out those losses and shows some examples of what the model generates.
+
+        Note that if `dev_texts` or `dev_loader` is None then the second return value will be 0.
         """
         train_loss = self.evaluate(train_loader)
         status = f"Epoch {epoch}: train loss: {train_loss:.4f}"
@@ -283,7 +285,7 @@ class LanguageModel(nn.Module):
             dev_loss = self.evaluate(dev_loader)
             status += f"\tdev loss: {dev_loss:.4f}"
         else:
-            dev_loss = None
+            dev_loss = 0.0
 
         if print_status:
             print(status)
@@ -294,7 +296,9 @@ class LanguageModel(nn.Module):
                 percent_train_origin,
                 percent_dev_origin,
                 percent_novel_origin,
-            ) = count_origins(generated_texts, train_texts, dev_texts or [])
+            ) = count_origins(
+                generated_texts, train_texts, dev_texts if dev_texts is not None else []
+            )
 
             print(
                 f"\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, "
