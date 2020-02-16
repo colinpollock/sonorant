@@ -48,3 +48,26 @@ def plot_pronunciation_probability(
     plt.xlabel("Phoneme")
     plt.ylabel("P(i | 0 ... i - n)")
     plt.title("Probability of Each Phoneme in Word")
+
+
+def interactive_generation(language_model, min_prob: float = 0.01):
+    """Generate a pronunciation with input from the user."""
+    pronunciation = ()
+    phoneme = language_model.vocab.START
+    while True:
+        print("pron:", pronunciation)
+        phoneme_to_prob = Series(language_model.next_probabilities(pronunciation))
+        phoneme_to_prob = phoneme_to_prob[phoneme_to_prob >= min_prob].sort_values(
+            ascending=False
+        )
+        phoneme_to_prob.plot.bar()
+        plt.show()
+        print("Choices:", ", ".join(phoneme_to_prob.index))
+
+        phoneme = input("Choose next phoneme:")
+        if phoneme == language_model.vocab.END:
+            print(pronunciation)
+            break
+
+        pronunciation = pronunciation + (phoneme,)
+
