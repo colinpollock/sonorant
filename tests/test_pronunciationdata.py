@@ -7,6 +7,7 @@ from sonorous.pronunciationdata import (
     count_primary_stressed_syllables,
     count_syllables,
     load_pronunciations,
+    tokenize_pronunciation_string,
 )
 
 
@@ -18,33 +19,63 @@ def test_load_data():
     assert len(pronunciations) == 124567
     cat = pronunciations.loc["cat"]
 
-    assert cat.pronunciation == "ˈkæt"
+    assert cat.pronunciation == ("ˈ", "k", "æ", "t")
     assert cat.num_phonemes == 3
     assert cat.num_syllables == 1
     assert cat.num_primary_stressed_syllables == 1
 
 
 def test_count_syllables():
-    assert count_syllables("ˈdɔgi") == 2
-    assert count_syllables("rɪˈpiːtɝ") == 3
-    assert count_syllables("əˈbaʊt") == 2
+    assert count_syllables(("ˈ", "d", "ɔ", "g", "i")) == 2
+    assert count_syllables(("r", "ɪ", "ˈ", "p", "i", "ː", "t", "ɝ")) == 3
+    assert count_syllables(("ə", "ˈ", "b", "aʊ", "t")) == 2
 
 
 def test_count_phonemes():
-    assert count_phonemes("ˈfɝːi") == 3
-    assert count_phonemes("əˈbaʊt") == 4
+    assert count_phonemes(("ˈ", "f", "ɝ", "ː", "i")) == 3
+    assert count_phonemes(("ə", "ˈ", "b", "aʊ", "t")) == 4
 
 
 def test_count_primary_stressed_syllables():
-    assert count_primary_stressed_syllables("ˈkæt") == 1
-    assert count_primary_stressed_syllables("ˈeɪˈaɪ") == 2
+    assert count_primary_stressed_syllables(("ˈ", "k", "æ", "t")) == 1
+    assert count_primary_stressed_syllables(("ˈ", "e", "ɪ", "ˈ", "a", "ɪ")) == 2
 
 
 def test_augment_pronunciations_df():
-    pronunciations = DataFrame({"pronunciation": ["ˈrɛdʒi"]})
+    pronunciations = DataFrame({"pronunciation": [("ˈ", "r", "ɛ", "dʒ", "i")]})
     augment_pronunciations_df(pronunciations)
 
     reggie = pronunciations.iloc[0]
-    assert reggie["num_phonemes"] == 5
+    assert reggie["num_phonemes"] == 4
     assert reggie["num_syllables"] == 2
 
+
+def test_tokenize_pronunciation_string():
+    # No groupings
+    assert tokenize_pronunciation_string("ˈkæt") == ("ˈ", "k", "æ", "t")
+    assert tokenize_pronunciation_string("ˈbætˌmæn") == (
+        "ˈ",
+        "b",
+        "æ",
+        "t",
+        "ˌ",
+        "m",
+        "æ",
+        "n",
+    )
+
+    # Length symbol grouped
+    assert tokenize_pronunciation_string("ˈfɝːi") == ("ˈ", "f", "ɝː", "i")
+    assert tokenize_pronunciation_string("ˈfuːd") == ("ˈ", "f", "uː", "d")
+
+    # # Affricates
+    assert tokenize_pronunciation_string("ˈtʃæt") == ("ˈ", "tʃ", "æ", "t")
+    assert tokenize_pronunciation_string("ˈrɛdʒi") == ("ˈ", "r", "ɛ", "dʒ", "i")
+
+    # # Diphthongs
+    assert tokenize_pronunciation_string("ˈʃaɪ") == ("ˈ", "ʃ", "aɪ")
+    assert tokenize_pronunciation_string("ˈbaʊd") == ("ˈ", "b", "aʊ", "d")
+    assert tokenize_pronunciation_string("ˈtreɪ") == ("ˈ", "t", "r", "eɪ")
+    assert tokenize_pronunciation_string("ˈbɔɪ") == ("ˈ", "b", "ɔɪ")
+    assert tokenize_pronunciation_string("ˈkɔrd") == ("ˈ", "k", "ɔ", "r", "d")
+    assert tokenize_pronunciation_string("ˈloʊ") == ("ˈ", "l", "oʊ")
