@@ -11,11 +11,14 @@ Pronunciation = Tuple[str, ...]
 
 CMUDICT_FILEPATH = "sonorous/data/cmudict-0.7b-ipa.txt"
 
+ACCEPTABLE_WORD_CHARACTERS = set(ascii_uppercase) | {"'", "_", ".", "-"}
+
 
 PRIMARY_STRESS = "ˈ"
 SECONDARY_STRESS = "ˌ"
 LENGTH_SYMBOL = "ː"
 NON_PHONEME_SYMBOLS = {PRIMARY_STRESS, SECONDARY_STRESS, LENGTH_SYMBOL}
+
 
 DIPHTHONGS = {
     "oʊ",
@@ -25,22 +28,30 @@ DIPHTHONGS = {
     "ɔɪ",
 }
 
-SYLLABIC_PHONEMES = {
-    "i",
-    "e",
-    "ʊ",
-    "o",
-    "u",
-    "ɑ",
-    "ɔ",
-    "ə",
-    "ɛ",
-    "ɪ",
-    "a",
-    "ɝ",
-    "æ",
-    "ʌ",
-} | DIPHTHONGS
+
+def _get_syllabic_phonemes():
+    syllabic_phonemes = {
+        "i",
+        "e",
+        "ʊ",
+        "u",
+        "ɑ",
+        "ɔ",
+        "ə",
+        "ɛ",
+        "ɪ",
+        "a",
+        "ɝ",
+        "æ",
+        "ʌ",
+    } | DIPHTHONGS
+    for _phoneme in list(syllabic_phonemes):
+        syllabic_phonemes.add(_phoneme + LENGTH_SYMBOL)
+
+    return syllabic_phonemes
+
+
+SYLLABIC_PHONEMES = _get_syllabic_phonemes()
 
 
 def load_pronunciations(num_rows: int = None) -> DataFrame:
@@ -51,7 +62,7 @@ def load_pronunciations(num_rows: int = None) -> DataFrame:
         for line in fh:
             word, pronunciations = line.strip().split("\t")
 
-            if not all(letter in ascii_uppercase for letter in word):
+            if not all(letter in ACCEPTABLE_WORD_CHARACTERS for letter in word):
                 continue
 
             for pronunciation in pronunciations.split(","):
@@ -68,7 +79,13 @@ def load_pronunciations(num_rows: int = None) -> DataFrame:
     pronunciations_df = DataFrame.from_records(records).set_index("word")
     augment_pronunciations_df(pronunciations_df)
 
-    return pronunciations_df
+    # I really only want pronunciations that are for single words. By definition, single words
+    # should have only one primary stress so I'm dropping words that don't have just one. This
+    # eliminates compound words ("solid-state") and acronyms ("ai"), which have more than one
+    # primary stress. It also eliminates words with no primary stress, which don't make sense to me.
+    # These tend to be function words, so I'm guessing the idea is that a neutral vowel can be
+    # unstressed.
+    return pronunciations_df[pronunciations_df.num_primary_stressed_syllables == 1]
 
 
 def tokenize_pronunciation_string(pronunciation_string: str) -> Pronunciation:

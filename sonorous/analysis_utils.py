@@ -7,6 +7,8 @@ from typing import Tuple
 from pandas import Series
 from matplotlib import pyplot as plt
 
+from sonorous.pronunciationdata import Pronunciation
+
 
 def plot_next_phoneme_distribution(
     language_model, pronunciation: Tuple[str, ...], min_probability: float = 0.01,
@@ -50,9 +52,9 @@ def plot_pronunciation_probability(
     plt.title("Probability of Each Phoneme in Word")
 
 
-def interactive_generation(language_model, min_prob: float = 0.01):
+def interactive_generation(language_model, min_prob: float = 0.01) -> None:
     """Generate a pronunciation with input from the user."""
-    pronunciation = ()
+    pronunciation: Pronunciation = ()
     phoneme = language_model.vocab.START
     while True:
         print("pron:", pronunciation)

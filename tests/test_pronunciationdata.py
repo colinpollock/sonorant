@@ -16,9 +16,12 @@ def test_load_data():
     doesn't change from under my feet.
     """
     pronunciations = load_pronunciations()
-    assert len(pronunciations) == 124567
-    cat = pronunciations.loc["cat"]
+    assert len(pronunciations) == 131964
 
+    # I'm dropping all pronunciations without 1 primary stressed syllable.
+    assert (pronunciations.num_primary_stressed_syllables != 1).sum() == 0
+
+    cat = pronunciations.loc["cat"]
     assert cat.pronunciation == ("ˈ", "k", "æ", "t")
     assert cat.num_phonemes == 3
     assert cat.num_syllables == 1
@@ -29,6 +32,7 @@ def test_count_syllables():
     assert count_syllables(("ˈ", "d", "ɔ", "g", "i")) == 2
     assert count_syllables(("r", "ɪ", "ˈ", "p", "i", "ː", "t", "ɝ")) == 3
     assert count_syllables(("ə", "ˈ", "b", "aʊ", "t")) == 2
+    assert count_syllables(("ɪ", "k", "s", "ˈ", "k", "j", "uː", "z")) == 2
 
 
 def test_count_phonemes():
