@@ -472,7 +472,7 @@ class LanguageModel(nn.Module):
     @staticmethod
     def load(file_handle, device_name: str) -> "LanguageModel":
         """Load a model from disk that has been saved using the `save` method."""
-        data = torch.load(file_handle)
+        data = torch.load(file_handle, map_location=torch.device(device_name))
         vocab = Vocabulary(data["token_to_idx"])
         model_params = ModelParams(**data["model_params"])
         state_dict = data["state_dict"]
