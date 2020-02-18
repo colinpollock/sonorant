@@ -85,7 +85,15 @@ def load_pronunciations(num_rows: int = None) -> DataFrame:
     # primary stress. It also eliminates words with no primary stress, which don't make sense to me.
     # These tend to be function words, so I'm guessing the idea is that a neutral vowel can be
     # unstressed.
-    return pronunciations_df[pronunciations_df.num_primary_stressed_syllables == 1]
+    pronunciations = pronunciations_df[
+        pronunciations_df.num_primary_stressed_syllables == 1
+    ]
+
+    # Now that every pronunciation has the same number of primary stressed syllables this column
+    # can be deleted.
+    del pronunciations["num_primary_stressed_syllables"]
+
+    return pronunciations
 
 
 def tokenize_pronunciation_string(pronunciation_string: str) -> Pronunciation:

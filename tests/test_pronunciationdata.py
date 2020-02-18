@@ -11,21 +11,24 @@ from sonorous.pronunciationdata import (
 )
 
 
-def test_load_data():
+def test_load_pronunciations():
     """This is partially just an integregation test to make sure the CMU Dict data
     doesn't change from under my feet.
     """
     pronunciations = load_pronunciations()
     assert len(pronunciations) == 131964
 
-    # I'm dropping all pronunciations without 1 primary stressed syllable.
-    assert (pronunciations.num_primary_stressed_syllables != 1).sum() == 0
+    # `load_pronunciations` drops all pronunciations without one primary stressed syllable,
+    # so each one here hsould have one primary stressed syllable.
+    assert (
+        pronunciations.pronunciation.apply(count_primary_stressed_syllables).unique()
+        == 1
+    )
 
     cat = pronunciations.loc["cat"]
     assert cat.pronunciation == ("ˈ", "k", "æ", "t")
     assert cat.num_phonemes == 3
     assert cat.num_syllables == 1
-    assert cat.num_primary_stressed_syllables == 1
 
 
 def test_count_syllables():
