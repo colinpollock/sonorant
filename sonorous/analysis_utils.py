@@ -72,4 +72,3 @@ def interactive_generation(language_model, min_prob: float = 0.01) -> None:
             break
 
         pronunciation = pronunciation + (phoneme,)
-
