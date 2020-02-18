@@ -3,7 +3,7 @@
 
 from collections import Counter
 from string import ascii_uppercase
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Tuple
 
 from pandas import DataFrame
 

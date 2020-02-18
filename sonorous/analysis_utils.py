@@ -13,7 +13,7 @@ from sonorous.pronunciationdata import Pronunciation
 def plot_next_phoneme_distribution(
     language_model, pronunciation: Tuple[str, ...], min_probability: float = 0.01,
 ) -> None:
-    """Plot the distribution over the vocabulary of the model's predictions for the *next* phoneme."""
+    """Plot the distribution over the vocabulary of the model's predictions for the next phoneme."""
     phoneme_to_probability = Series(language_model.next_probabilities(pronunciation))
     phoneme_to_probability = phoneme_to_probability[
         phoneme_to_probability >= min_probability
