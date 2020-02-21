@@ -153,6 +153,8 @@ class LanguageModel(nn.Module):
         self._dropout = nn.Dropout(model_params.dropout)
         self._l2_strength = model_params.l2_strength
 
+        self.to(self.device)
+
     def forward(self, inputs, hidden_state=None):
         inputs = inputs.to(self.device)
 
@@ -227,6 +229,15 @@ class LanguageModel(nn.Module):
         dev_losses = []
         for epoch in range(1, max_epochs + 1):
             if not has_decreased(train_losses, early_stopping_rounds):
+                train_loss, dev_loss = self._eval_and_print(
+                    epoch,
+                    train_texts,
+                    train_loader,
+                    dev_texts,
+                    dev_loader,
+                    print_status,
+                )
+
                 print(
                     f"Early stopping because of no decrease in {early_stopping_rounds} epochs.",
                     file=sys.stderr,
