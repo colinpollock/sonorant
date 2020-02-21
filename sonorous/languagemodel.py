@@ -337,11 +337,13 @@ class LanguageModel(nn.Module):
 
         return loss / total_tokens
 
-    def generate(self, max_length: int, temperature: float = 1) -> Tuple[str, ...]:
+    def generate(
+        self, max_length: int = 100, temperature: float = 1
+    ) -> Tuple[str, ...]:
         """Generate a new text.
 
         Args:
-        - max_length: the maximum number of tokens to generate.
+        - max_length: the maximum number of tokens to generate. Defaults to 100.
         - temperature: higher will increase diversity, lower will more often select the top
           probability tokens. Defaults to 1, which has no effect.
 
