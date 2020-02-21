@@ -27,6 +27,7 @@ def test_load_pronunciations():
 
     cat = pronunciations.loc["cat"]
     assert cat.pronunciation == ("ˈ", "k", "æ", "t")
+    assert cat.as_string == "ˈkæt"
     assert cat.num_phonemes == 3
     assert cat.num_syllables == 1
 
