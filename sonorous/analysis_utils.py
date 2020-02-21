@@ -40,6 +40,7 @@ def plot_next_phoneme_distribution(
             return
 
     phoneme_to_probability.sort_values(ascending=False).plot.bar()
+    plt.xticks(fontsize=14, rotation=0)
     plt.xlabel("Phoneme")
     plt.title(
         "Probability of each phoneme coming after /{}/".format(" ".join(pronunciation))
@@ -63,6 +64,7 @@ def plot_pronunciation_probability(
     )
 
     phoneme_to_probability.plot.bar()
+    plt.xticks(fontsize=14, rotation=0)
     plt.xlabel("Phoneme")
     plt.ylabel("P(i | 0 ... i - n)")
     plt.title("Probability of Each Phoneme in Word")
