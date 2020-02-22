@@ -7,6 +7,7 @@ from typing import Optional, Set, Tuple
 
 from pandas import Series
 from matplotlib import pyplot as plt
+from sklearn.metrics.pairwise import cosine_similarity
 
 from sonorous.pronunciationdata import Pronunciation
 
