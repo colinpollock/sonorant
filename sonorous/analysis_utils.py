@@ -133,4 +133,3 @@ def analogy(language_model, a, b, c):
         :10
     ]:
         print(f"[{sim:.4f}] {phoneme}")
-

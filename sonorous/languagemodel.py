@@ -235,7 +235,7 @@ class LanguageModel(nn.Module):
                     train_loader,
                     dev_texts,
                     dev_loader,
-                    print_status,
+                    print_status=True,
                 )
 
                 print(
