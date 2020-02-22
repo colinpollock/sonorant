@@ -1,10 +1,10 @@
 Sonorous
 ========
-This is a language model for English words, but using sounds (phonemes) rather than letters. It's an RNN trained in PyTorch on words from the [CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict), a corpus of phonemic transcriptions of words. Each word is a sequence of [ARPABET](https://en.wikipedia.org/wiki/ARPABET) characters. So for example the word "fish" is /F IH1 SH/ and the word "cough" is /K AA1 F/.
+This is a language model for English words, but using sounds (phonemes) rather than letters. It's an RNN trained in PyTorch on words from the [CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict), a corpus of phonemic transcriptions of words. Each word is a sequence of [International Phonetic Alphabet](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) symbols. So for example the word "fish" is /ˈfɪʃ/ and the word "cough" is /ˈkɑːt/.
 
 There are a few places you might want to look:
 - The Jupyter notebook `Model Training.ipynb` to see how the language model over phonemes was trained.
-- The Jupyter notebook `Phoneme Exploration.ipynb` to a trained model. I cover (a) what are the most- and least-Englishy words, (b) generating novel words, and (c) probing the model to see whether it really learned English phonotactics.
+- The Jupyter notebook `Model Exploration and Usage.ipynb` to a trained model. I cover (a) what are the most- and least-Englishy words, (b) generating novel words, and (c) probing the model to see whether it really learned English phonotactics.
 - The Python module sonorous/languagemodel.py contains the actual PyTorch language model. It has some nice helper methods and is well tested. See the section Language Model below for more on how to use it.
 
 If you want to run these examples follow the instructions in the Setup section below.
@@ -16,7 +16,7 @@ If you want to run these examples follow the instructions in the Setup section b
 4. Run tests to make sure everything is working on. `make test`
 5. Start Jupyter notebook server. `jupyter notebook --port=8888`
 
-You can now navigate to localhost:8888/tree in your browser. Open `Model Training.ipynb` or `Phoneme Exploration.ipynb`.
+You can now navigate to localhost:8888/tree in your browser. Open `Model Training.ipynb` or `Model Exploration and Usage.ipynb`.
 
 
 ## Related Work ##
@@ -65,6 +65,7 @@ You can calculate the perplexity of any text. Perplexity is basically the length
 Out[3]: 14.466998156671036
 
 You can pass in a tuple of tokens and the model will return a probability distribution over the vocabulary for its predictions of which token will come next.
+```
 >>> model.next_probabilities(("a", "cat"))
 Out[4]:
 {'<PAD>': 0.0008051212062127888,
@@ -76,14 +77,19 @@ Out[4]:
  'some': 0.00814706552773714,
  'dogs': 0.0017555770464241505,
  'slept': 0.015368768945336342}
+```
 
 You can generate novel texts.
+```
 >>> model.generate(max_length=1000)
 Out[5]: ('dogs', 'cat')
+```
 
 You can save the model to disk and then load it.
+```
 >>> with open('model.pt', 'wb') as fh:
     model.save(fh)
 
 >>> with open('model.pt', 'rb') as fh:
     the_same_model = LanguageModel.load(fh, device_name='cpu')
+```

@@ -153,6 +153,8 @@ class LanguageModel(nn.Module):
         self._dropout = nn.Dropout(model_params.dropout)
         self._l2_strength = model_params.l2_strength
 
+        self.to(self.device)
+
     def forward(self, inputs, hidden_state=None):
         inputs = inputs.to(self.device)
 
@@ -227,6 +229,15 @@ class LanguageModel(nn.Module):
         dev_losses = []
         for epoch in range(1, max_epochs + 1):
             if not has_decreased(train_losses, early_stopping_rounds):
+                train_loss, dev_loss = self._eval_and_print(
+                    epoch,
+                    train_texts,
+                    train_loader,
+                    dev_texts,
+                    dev_loader,
+                    print_status=True,
+                )
+
                 print(
                     f"Early stopping because of no decrease in {early_stopping_rounds} epochs.",
                     file=sys.stderr,
@@ -247,8 +258,8 @@ class LanguageModel(nn.Module):
                 optimizer.step()
                 train_epoch_loss += loss.item()
                 print(
-                    "Epoch {}; Batch {} of {}; loss: {:.4f}".format(
-                        epoch, batch_num, len(train_loader), loss.item()
+                    "Epoch {}; Batch {} of {}; loss: {:.4f}{}".format(
+                        epoch, batch_num, len(train_loader), loss.item(), " " * 100
                     ),
                     end="\r",
                 )
@@ -275,6 +286,8 @@ class LanguageModel(nn.Module):
 
         It returns the loss against the training and dev sets, and if `print_status` is True also
         prints out those losses and shows some examples of what the model generates.
+
+        Note that if `dev_texts` or `dev_loader` is None then the second return value will be 0.
         """
         train_loss = self.evaluate(train_loader)
         status = f"Epoch {epoch}: train loss: {train_loss:.4f}"
@@ -283,7 +296,7 @@ class LanguageModel(nn.Module):
             dev_loss = self.evaluate(dev_loader)
             status += f"\tdev loss: {dev_loss:.4f}"
         else:
-            dev_loss = None
+            dev_loss = 0.0
 
         if print_status:
             print(status)
@@ -294,7 +307,9 @@ class LanguageModel(nn.Module):
                 percent_train_origin,
                 percent_dev_origin,
                 percent_novel_origin,
-            ) = count_origins(generated_texts, train_texts, dev_texts or [])
+            ) = count_origins(
+                generated_texts, train_texts, dev_texts if dev_texts is not None else []
+            )
 
             print(
                 f"\tGenerated: in train: {percent_train_origin}%, assess: {percent_dev_origin}%, "
@@ -333,11 +348,13 @@ class LanguageModel(nn.Module):
 
         return loss / total_tokens
 
-    def generate(self, max_length: int, temperature: float = 1) -> Tuple[str, ...]:
+    def generate(
+        self, max_length: int = 100, temperature: float = 1
+    ) -> Tuple[str, ...]:
         """Generate a new text.
 
         Args:
-        - max_length: the maximum number of tokens to generate.
+        - max_length: the maximum number of tokens to generate. Defaults to 100.
         - temperature: higher will increase diversity, lower will more often select the top
           probability tokens. Defaults to 1, which has no effect.
 
@@ -468,7 +485,7 @@ class LanguageModel(nn.Module):
     @staticmethod
     def load(file_handle, device_name: str) -> "LanguageModel":
         """Load a model from disk that has been saved using the `save` method."""
-        data = torch.load(file_handle)
+        data = torch.load(file_handle, map_location=torch.device(device_name))
         vocab = Vocabulary(data["token_to_idx"])
         model_params = ModelParams(**data["model_params"])
         state_dict = data["state_dict"]

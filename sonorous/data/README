@@ -1,0 +1,6 @@
+# Data #
+
+### cmudict-0.7b-ipa.txt ###
+This is the CMU Dictionary in IPA.  There are a few packages on PyPI for accessing the CMU Dict in
+the original Arpabet, but this was the only one I could find that had CMU Dict in IPA with stress
+actualy translated well. It's from https://github.com/menelik3/cmudict-ipa.
