@@ -1,6 +1,6 @@
 from pandas import DataFrame
 
-from sonorous.pronunciationdata import (
+from sonorant.pronunciationdata import (
     SYLLABIC_PHONEMES,
     augment_pronunciations_df,
     count_phonemes,

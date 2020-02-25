@@ -1,4 +1,4 @@
-Sonorous
+Sonorant
 ========
 This is a language model for English words, but using sounds (phonemes) rather than letters. It's an RNN trained in PyTorch on words from the [CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict), a corpus of phonemic transcriptions of words. Each word is a sequence of [International Phonetic Alphabet](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) symbols. So for example the word "fish" is /ˈfɪʃ/ and the word "cough" is /ˈkɑːt/.
 
@@ -7,13 +7,13 @@ There are a few places you might want to look:
   next phoneme from a distribution.
 - The Jupyter notebook `Model Training.ipynb` to see how the language model over phonemes was trained.
 - The Jupyter notebook `Model Exploration and Usage.ipynb` to a trained model. I cover (a) what are the most- and least-Englishy words, (b) generating novel words, and (c) probing the model to see whether it really learned English phonotactics.
-- The Python module sonorous/languagemodel.py contains the actual PyTorch language model. It has some nice helper methods and is well tested. See the section Language Model below for more on how to use it.
+- The Python module sonorant/languagemodel.py contains the actual PyTorch language model. It has some nice helper methods and is well tested. See the section Language Model below for more on how to use it.
 
 If you want to run these examples follow the instructions in the Setup section below.
 
 ## Setup ##
 1. Create and source a virtualenv. `python3 -m venv .venv && source .venv/bin/activate`
-2. Upgrade pip. `'pip install --upgrade pip`
+2. Upgrade pip. `pip install --upgrade pip`
 3. Install dependencies. `pip install -r requirements.txt`
 4. Run tests to make sure everything is working. `make test`
 
@@ -27,11 +27,11 @@ To see the notebooks:
 
 
 ## Language Model ##
-The majority of code in this repo isn't specific to pronunciations. `sonorous/languagemodel.py` contains a class `LanguageModel`, which is a neural language model that can be trained on any type of texts. In this section I'll outline its functionalities.
+The majority of code in this repo isn't specific to pronunciations. `sonorant/languagemodel.py` contains a class `LanguageModel`, which is a neural language model that can be trained on any type of texts. In this section I'll outline its functionalities.
 
 Import these three classes.
 ```
->>> from sonorous.languagemodel import LanguageModel, ModelParams, Vocabulary
+>>> from sonorant.languagemodel import LanguageModel, ModelParams, Vocabulary
 ```
 
 Define the train and dev texts. Build a `Vocabulary` from the texts, which handles the mapping of tokens like "a" to integer indices.

@@ -1,4 +1,5 @@
 """General utilities """
+import math
 from typing import Optional, Sequence, Tuple, Type
 
 import torch
@@ -118,3 +119,9 @@ def get_torch_device_by_name(device_name: Optional[str] = None) -> torch.device:
             raise ValueError("cuda is not available")
 
         return torch.device(device_name)
+
+
+def truncate(number, digits) -> float:
+    """Truncate the input `number` to ` digits` digits."""
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper

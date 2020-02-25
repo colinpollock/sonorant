@@ -9,7 +9,7 @@ from pandas import Series
 from matplotlib import pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 
-from sonorous.pronunciationdata import Pronunciation
+from sonorant.pronunciationdata import Pronunciation
 
 
 def plot_next_phoneme_distribution(

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import torch
 
-from sonorous.languagemodel import (
+from sonorant.languagemodel import (
     LanguageModel,
     ModelParams,
     Vocabulary,
