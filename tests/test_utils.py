@@ -1,3 +1,4 @@
+import math
 from unittest import mock
 
 import pandas as pd
@@ -5,12 +6,13 @@ import pytest
 import torch
 from torch.nn.modules import rnn
 
-from sonorous.utils import (
+from sonorant.utils import (
     count_origins,
     get_rnn_model_by_name,
     get_torch_device_by_name,
     has_decreased,
     split_data,
+    truncate,
 )
 
 
@@ -78,13 +80,13 @@ def test_get_torch_device_by_name():
     cpu = torch.device("cpu")
     cuda = torch.device("cuda")
 
-    with mock.patch("sonorous.utils.torch.cuda.is_available", lambda: True):
+    with mock.patch("sonorant.utils.torch.cuda.is_available", lambda: True):
         assert get_torch_device_by_name("cpu") == cpu
         assert get_torch_device_by_name("cuda") == cuda
 
         assert get_torch_device_by_name() == cuda
 
-    with mock.patch("sonorous.utils.torch.cuda.is_available", lambda: False):
+    with mock.patch("sonorant.utils.torch.cuda.is_available", lambda: False):
         assert get_torch_device_by_name("cpu") == cpu
 
         with pytest.raises(ValueError):

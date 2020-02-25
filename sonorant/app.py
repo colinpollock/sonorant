@@ -1,4 +1,4 @@
-"""The Flask app that exposes the Sonorous interactive website."""
+"""The Flask app that exposes the Sonorant interactive website."""
 
 
 import math
@@ -8,7 +8,8 @@ from flask import Flask, jsonify, render_template, request
 
 from flask_cors import CORS
 
-from sonorous.languagemodel import LanguageModel
+from sonorant.languagemodel import LanguageModel
+from sonorant.utils import truncate
 
 
 # TODO: put this into a config
@@ -17,6 +18,10 @@ PORT = 5555
 # TODO: load this elsewhere
 # TODO: put model name in config
 MODEL = LanguageModel.load("models/gru_20_20_1.pt", device_name="cpu")
+
+# Minimum probability for returning a  phoneme. This can't be zero, or else things like <PAD> will
+# show up.
+DEFAULT_MIN_PROB = 0.001
 
 
 def create_app():
@@ -42,9 +47,13 @@ def create_app():
         """
         so_far = request.args.get("so_far")
 
-        # This can't be zero, or else things like <PAD> will show up.
-        default_min_prob = 0.001
-        min_prob = float(request.args.get("min_prob", default_min_prob))
+        try:
+            min_prob = float(request.args.get("min_prob", DEFAULT_MIN_PROB))
+        except ValueError as e:
+            return e.message, 400
+
+        if not 0 < min_prob <= 1:
+            return "min_prob must be greater than 0 and less than or equal to 1", 400
 
         # Pronunciation is a tuple, so if the input string is empty it's an empty tuple
         pronunciation = tuple(so_far.split(" ")) if so_far else ()
@@ -55,7 +64,7 @@ def create_app():
             return str(e), 400
 
         next_probabilities = {
-            phoneme: math.floor(prob * 100)
+            phoneme: truncate(prob * 100, 3)
             for (phoneme, prob) in next_probabilities.items()
             if prob > min_prob
         }
@@ -67,3 +76,4 @@ def create_app():
         return jsonify(sorted_probs)
 
     return app
+

@@ -9,7 +9,7 @@ from pandas import DataFrame
 
 Pronunciation = Tuple[str, ...]
 
-CMUDICT_FILEPATH = "sonorous/data/cmudict-0.7b-ipa.txt"
+CMUDICT_FILEPATH = "sonorant/data/cmudict-0.7b-ipa.txt"
 
 ACCEPTABLE_WORD_CHARACTERS = set(ascii_uppercase) | {"'", "_", ".", "-"}
 

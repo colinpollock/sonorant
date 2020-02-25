@@ -1,4 +1,4 @@
-from sonorous.app import create_app
+from sonorant.app import create_app
 
 
 # TODO: use pytest fixture instead

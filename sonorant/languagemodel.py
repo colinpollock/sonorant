@@ -5,7 +5,7 @@ text is a tuple of tokens. This means that tokenization needs to happen before i
 LanguageModel. Below is a short walkthrough of everything you'd need from this class.
 
 # Import these three classes.
->>> from sonorous.languagemodel import LanguageModel, ModelParams, Vocabulary
+>>> from sonorant.languagemodel import LanguageModel, ModelParams, Vocabulary
 
 # Define the train and dev texts. Build a `Vocabulary` from the texts, which handles the mapping
 # of tokens like "a" to integer indices.
@@ -85,7 +85,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
-from sonorous.utils import (
+from sonorant.utils import (
     get_rnn_model_by_name,
     get_torch_device_by_name,
     has_decreased,
