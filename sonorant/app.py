@@ -76,4 +76,3 @@ def create_app():
         return jsonify(sorted_probs)
 
     return app
-
