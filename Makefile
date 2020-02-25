@@ -12,3 +12,6 @@ lint:
 
 	# Skipping B322, which doesn't apply to Python 3.
 	bandit -r sonorous --skip B322
+
+runserver:
+	python -m sonorous

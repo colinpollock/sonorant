@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Sonorous</title>
+    <script src="https://www.chartjs.org/dist/2.9.3/Chart.min.js"></script>
+    <script src="https://www.chartjs.org/samples/latest/utils.js"></script>
+    <style>
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" style="width: 75%;">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <button id="resetData">Start Over</button>
+    <button id="undoLast">Undo Last</button>
+    <!-- TODO eventually: pull JS out and test it -->
+    <script>
+        const data = {
+            labels: [],
+            // Chart.js expects data to be in a list called `datasets`, but I only have one dataset
+            // so I just refer to data.datasets[0] throughought the code.
+            datasets: [{
+                backgroundColor: Chart.helpers.color(window.chartColors.blue).alpha(0.75).rgbString(),
+                borderColor: window.chartColors.blue,
+                borderWidth: 1,
+                data: []
+            }],
+            chosenPhonemes: []
+        };
+
+        window.onload = function () {
+            var ctx = document.getElementById('canvas').getContext('2d');
+            window.chart = new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    legend: { display: false, position: 'top' },
+                    title: { display: true, fontSize: 50 },
+                    scales: {
+                        xAxes: [{ ticks: { fontSize: 25 } }],
+                        yAxes: [{ ticks: { beginAtZero: true } }]
+                    },
+                    onClick: (event, activeElements) => {
+                        // If the user doesn't click on one phoneme's bar then there's nothing to do.
+                        if (activeElements.length == 0) {
+                            return;
+                        }
+                        var chosenPhonemeIndex = activeElements[0]._index;
+                        var chosenPhoneme = data.labels[chosenPhonemeIndex]
+
+                        if (chosenPhoneme == '<END>') {
+                            presentDoneWord();
+                            resetData();
+                        } else {
+                            data.chosenPhonemes.push(chosenPhoneme);
+                            updateChartDisplay();
+                        }
+                    }
+                }
+            });
+
+            updateChartDisplay()
+        };
+
+        /*
+         * Present the final word to the user.
+         * Note this is just an alert right now, but will involve updating the chart to show the
+         * full word.
+         */
+        function presentDoneWord() {
+            alert("You made a word: " + makePronunciationString());
+        }
+
+        /*
+         * Clear the chosen phonemes and redraw the chart.
+         */
+        function resetData() {
+            data.chosenPhonemes = [];
+            updateChartDisplay();
+        }
+
+        /*
+         * Calls the language model service to get the distribution over the *next* phoneme.
+         * Returns a list of [phoneme, probability] pairs.
+         */
+        function getNextPhonemeDistribution(updateDisplayCallback) {
+            var soFarString = data.chosenPhonemes.join(' ');
+            // TODO: Don't hard-ode the host
+            var url = "http://localhost:{{ port }}/next_probs?so_far=" + encodeURI(soFarString);
+
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    var response = JSON.parse(this.responseText);
+                    updateDisplayCallback(response);
+                }
+            };
+            xmlhttp.open("GET", url, true);
+            xmlhttp.send();
+        }
+
+        /*
+         * Calls the language model service to get the probability distribution over the vocabulary
+         * for the next phoneme in the sequence. The chart is then updated showing the distribution.
+         */
+        function updateChartDisplay() {
+            function updateDisplay(phonemeDistribution) {
+                data.labels = [];
+                data.datasets[0].data = [];
+
+                for (var index in phonemeDistribution) {
+                    [phoneme, probability] = phonemeDistribution[index];
+                    data.labels.push(phoneme);
+                    data.datasets[0].data.push(probability);
+                }
+
+                chart.options.title.text = makePronunciationString();
+                window.chart.update();
+            }
+
+            getNextPhonemeDistribution(updateDisplay);
+        }
+
+        /* Return a readable IPA string. */
+        function makePronunciationString() {
+            return '/' + data.chosenPhonemes.join(' ') + '/'
+        }
+
+        document.getElementById('resetData').addEventListener('click', function () {
+            resetData();
+        });
+
+        document.getElementById('undoLast').addEventListener('click', function () {
+            data.chosenPhonemes.pop();
+            updateChartDisplay();
+        });
+
+    </script>
+</body>
+
+</html>
