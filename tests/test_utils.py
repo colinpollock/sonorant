@@ -96,3 +96,9 @@ def test_get_torch_device_by_name():
 
     with pytest.raises(RuntimeError):
         get_torch_device_by_name("lol what?")
+
+
+def test_truncate():
+    assert truncate(98.6, 0) == 98.0
+    assert truncate(1.234567, 3) == 1.234
+

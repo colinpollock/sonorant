@@ -22,7 +22,7 @@ class TestApp:
         assert isinstance(phoneme_distribution, list)
         for phoneme, probability in phoneme_distribution:
             assert isinstance(phoneme, str)
-            assert 1 <= probability <= 100
+            assert 0 < probability <= 100
 
     def test_valid_with_min_prob(self):
         response = self.client.get("/next_probs?so_far=t r&min_prob=.3")
@@ -34,6 +34,10 @@ class TestApp:
         for phoneme, probability in phoneme_distribution:
             assert isinstance(phoneme, str)
             assert 30 <= probability <= 100
+
+    def test_invalid_min_prob_value(self):
+        response = self.client.get("/next_probs?so_far=t r&min_prob=0")
+        assert response.status_code == 400
 
     def test_out_of_vocab(self):
         """Tests that a so_far string with unknown tokens will fail."""

@@ -1,7 +1,6 @@
 """The Flask app that exposes the Sonorant interactive website."""
 
 
-import math
 from operator import itemgetter
 
 from flask import Flask, jsonify, render_template, request
@@ -38,7 +37,8 @@ def create_app():
 
         Query parameters:
         - so_far: a space-separated string of phonemes, each of which must be in the model's vocab.
-        - min_probability: phonemes at or below this threshold won't be returned.
+        - min_probability: phonemes at or below this threshold won't be returned. Must be greater
+          than zero (to avoid showing *everything*) and less than 1.
 
         Returns: a JSON descended sorted list of [phoneme, probability] pairs.
 
