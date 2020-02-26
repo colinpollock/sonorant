@@ -23,7 +23,7 @@ MODEL = LanguageModel.load("models/gru_20_20_1.pt", device_name="cpu")
 # show up.
 DEFAULT_MIN_PROB = 0.001
 
-IN_PROD = False
+IN_PROD = True
 
 
 def create_app():
