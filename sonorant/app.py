@@ -23,6 +23,8 @@ MODEL = LanguageModel.load("models/gru_20_20_1.pt", device_name="cpu")
 # show up.
 DEFAULT_MIN_PROB = 0.001
 
+IN_PROD = False
+
 
 def create_app():
     app = Flask(__name__)
@@ -30,8 +32,9 @@ def create_app():
 
     @app.route("/")
     def interactive_app():
+        port = 80 if IN_PROD else PORT
         logging.log(logging.ERROR, "the host is:" + str(request.host))
-        return render_template("interactive_app.html", port=PORT)
+        return render_template("interactive_app.html", host=request.host, port=port)
 
     @app.route("/next_probs")
     def next_probs():
