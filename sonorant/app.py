@@ -12,7 +12,7 @@ from sonorant.utils import truncate
 
 
 # TODO: put this into a config
-PORT = 5555
+PORT = 5000
 
 # TODO: load this elsewhere
 # TODO: put model name in config
