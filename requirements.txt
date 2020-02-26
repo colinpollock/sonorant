@@ -1,16 +1,16 @@
-Flask==1.1.1
-Flask-Cors==3.0.8
-bandit==1.6.2
-black==19.10b0
-flake8==3.7.9
-gunicorn==20.0.4
+# Flask==1.1.1
+# Flask-Cors==3.0.8
+# bandit==1.6.2
+# black==19.10b0
+# flake8==3.7.9
+# gunicorn==20.0.4
 # jupyter==1.0.0
 # jupyter-contrib-nbextensions==0.5.1
 # matplotlib==3.1.2
-mypy==0.761
-numpy==1.18.1
-pandas==0.25.3
-pytest==5.3.5
+# mypy==0.761
+# numpy==1.18.1
+# pandas==0.25.3
+# pytest==5.3.5
 # scikit-learn==0.22.1
-torch==1.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+torch==1.4.0
 # tqdm==4.42.0
