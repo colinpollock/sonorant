@@ -12,5 +12,5 @@ numpy==1.18.1
 pandas==0.25.3
 pytest==5.3.5
 # scikit-learn==0.22.1
-torch==1.4.0+cpu
+pip install torch==1.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 # tqdm==4.42.0
