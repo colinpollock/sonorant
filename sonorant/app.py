@@ -30,6 +30,7 @@ def create_app():
 
     @app.route("/")
     def interactive_app():
+        logging.log(logging.ERROR, "the host is:" + str(request.host))
         return render_template("interactive_app.html", port=PORT)
 
     @app.route("/next_probs")
@@ -46,8 +47,6 @@ def create_app():
         Note that the returned probabilities are ints between 0 and 100 since those are easier to
         display in a chart.
         """
-        logging.log(logging.ERROR, "the host is:" + str(request.host))
-
         so_far = request.args.get("so_far")
 
         try:
