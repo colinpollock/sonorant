@@ -1,5 +1,6 @@
 """The Flask app that exposes the Sonorant interactive website."""
 
+import logging
 
 from operator import itemgetter
 
@@ -45,6 +46,8 @@ def create_app():
         Note that the returned probabilities are ints between 0 and 100 since those are easier to
         display in a chart.
         """
+        logging.log(logging.ERROR, "the host is:" + str(request.host))
+
         so_far = request.args.get("so_far")
 
         try:
