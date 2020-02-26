@@ -1,2 +1,2 @@
-web: gunicorn runserver.py
+web: gunicorn "sonorant.app:create_app()"
 
