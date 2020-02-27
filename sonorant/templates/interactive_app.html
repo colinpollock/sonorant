@@ -95,7 +95,7 @@
         function getNextPhonemeDistribution(updateDisplayCallback) {
             var soFarString = data.chosenPhonemes.join(' ');
             // TODO: Don't hard-ode the host
-            var url = "https://{{ host }}:{{ port }}/next_probs?so_far=" + encodeURI(soFarString);
+            var url = "https://{{ host }}/next_probs?so_far=" + encodeURI(soFarString);
 
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function () {
