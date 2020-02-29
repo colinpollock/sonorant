@@ -14,4 +14,4 @@ lint:
 	bandit -r sonorant --skip B322
 
 runserver:
-	python runserver.py
+	python -m sonorant

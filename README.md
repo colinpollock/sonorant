@@ -19,7 +19,7 @@ If you want to run these examples follow the instructions in the Setup section b
 
 To run the interactive app:
 1. Start the Flask server. `make runserver`
-2. Navigate to localhost:5555
+2. Navigate to localhost:5000
 
 To see the notebooks:
 1. Start Jupyter notebook server. `jupyter notebook --port=8888`
