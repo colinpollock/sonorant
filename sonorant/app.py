@@ -1,10 +1,10 @@
 """The Flask app that exposes the Sonorant interactive website."""
 
 import logging
-
+import os
 from operator import itemgetter
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, current_app, jsonify, render_template, request
 
 from flask_cors import CORS
 
@@ -12,18 +12,11 @@ from sonorant.languagemodel import LanguageModel
 from sonorant.utils import truncate
 
 
-# TODO: put this into a config
-PORT = 5000
-
-# TODO: load this elsewhere
-# TODO: put model name in config
 MODEL = LanguageModel.load("models/gru_20_20_1.pt", device_name="cpu")
 
 # Minimum probability for returning a  phoneme. This can't be zero, or else things like <PAD> will
 # show up.
 DEFAULT_MIN_PROB = 0.001
-
-IN_PROD = True
 
 
 def create_app():
@@ -32,9 +25,11 @@ def create_app():
 
     @app.route("/")
     def interactive_app():
-        port = 80 if IN_PROD else PORT
-        logging.log(logging.ERROR, "the host is:" + str(request.host))
-        return render_template("interactive_app.html", host=request.host, port=port)
+        next_probs_endpoint = f"next_probs?so_far="
+        logging.log(logging.ERROR, f"next probs url: {next_probs_endpoint}")
+        return render_template(
+            "interactive_app.html", next_probs_endpoint=next_probs_endpoint
+        )
 
     @app.route("/next_probs")
     def next_probs():
