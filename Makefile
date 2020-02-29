@@ -14,4 +14,4 @@ lint:
 	bandit -r sonorant --skip B322
 
 runserver:
-	python -m sonorant
+	FLASK_ENV=development python -m sonorant
