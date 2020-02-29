@@ -1,0 +1,5 @@
+jupyter==1.0.0
+jupyter-contrib-nbextensions==0.5.1
+
+-r common.txt
+torch==1.4.0

@@ -1,0 +1,4 @@
+-r common.txt
+
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==1.4.0+cpu
