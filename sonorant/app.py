@@ -1,10 +1,9 @@
 """The Flask app that exposes the Sonorant interactive website."""
 
 import logging
-import os
 from operator import itemgetter
 
-from flask import Flask, current_app, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request
 
 from flask_cors import CORS
 
