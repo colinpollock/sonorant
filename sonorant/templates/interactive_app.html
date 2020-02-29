@@ -2,25 +2,131 @@
 <html>
 
 <head>
-    <title>Sonorant</title>
+    <title>/ˈsɑːnərənt/</title>
     <script src="https://www.chartjs.org/dist/2.9.3/Chart.min.js"></script>
     <script src="https://www.chartjs.org/samples/latest/utils.js"></script>
     <style>
+        body {
+            font-family: Helvetica, sans-serif;
+        }
+
+        #content {
+            padding-left: 10%;
+            padding-right: 10%;
+        }
+
+        a {
+            color: steelblue;
+        }
+
+        #header {
+            display: flex;
+            font-weight: bolder;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 10%;
+            padding-right: 10%;
+        }
+
+        #site-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #site-title {
+            font-size: 2em;
+        }
+
+        #site-tagline {
+            font-size: 1em;
+        }
+
+        #header a:link {
+            font-size: 1em;
+            text-decoration: none;
+        }
+
+        #header a:hover {
+            text-decoration: underline;
+        }
+
+
+        #site-links {
+            display: flex;
+            justify-content: space-around;
+            width: 15%;
+        }
+
         canvas {
             -moz-user-select: none;
             -webkit-user-select: none;
             -ms-user-select: none;
         }
+
+        #chart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50%;
+        }
+
+        #buttons {
+            display: flex;
+            justify-content: center;
+            color: steelblue;
+            padding-top: 2%;
+        }
+
+        button {
+            font-size: large;
+            color: steelblue;
+            border-radius: 40em;
+        }
+
+        #instructions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 2%;
+        }
     </style>
 </head>
 
-<body>
-    <div id="container" style="width: 75%;">
+<body id="content">
+
+    <div id="header">
+        <div id="site-info">
+            <div id="site-title">Sonorant</div>
+            <div id="site-tagline">Make novel words in IPA</div>
+        </div>
+
+        <div id="site-links">
+            <div><a href="lol todo">About</a></div>
+            <div><a href="https://github.com/colinpollock/sonorant">Github</a></div>
+        </div>
+    </div>
+
+    <div id="chart">
         <canvas id="canvas"></canvas>
     </div>
 
-    <button id="resetData">Start Over</button>
-    <button id="undoLast">Undo Last</button>
+    <div id="buttons">
+        <button id="resetData">Start Over</button>
+        <button id="undoLast">Undo Last</button>
+    </div>
+
+    <div id="instructions">
+        <div style="font-weight: bold">Construct novel English words, one phoneme at a time!</div>
+        <div>
+            <ul>
+                <li>Click a bar to choose the next phoneme.</li>
+                <li>Your current word shows up between //.</li>
+                <li>The bars show how likely each phoneme is, according to a language model (click About for more info).
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <!-- TODO eventually: pull JS out and test it -->
     <script>
         const data = {
@@ -46,8 +152,8 @@
                     legend: { display: false, position: 'top' },
                     title: { display: true, fontSize: 50 },
                     scales: {
-                        xAxes: [{ ticks: { fontSize: 25 } }],
-                        yAxes: [{ ticks: { beginAtZero: true } }]
+                        yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Probability', fontSize: 15 } }],
+                        xAxes: [{ ticks: { fontSize: 20 }, scaleLabel: { display: true, labelString: 'Next Phoneme', fontSize: 15 } }]
                     },
                     onClick: (event, activeElements) => {
                         // If the user doesn't click on one phoneme's bar then there's nothing to do.
