@@ -1,6 +1,5 @@
 """The Flask app that exposes the Sonorant interactive website."""
 
-import logging
 from operator import itemgetter
 
 from flask import Flask, jsonify, render_template, request
@@ -25,7 +24,6 @@ def create_app():
     @app.route("/")
     def interactive_app():
         next_probs_endpoint = f"next_probs?so_far="
-        logging.log(logging.ERROR, f"next probs url: {next_probs_endpoint}")
         return render_template(
             "interactive_app.html", next_probs_endpoint=next_probs_endpoint
         )
