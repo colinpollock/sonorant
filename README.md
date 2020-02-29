@@ -14,12 +14,12 @@ If you want to run these examples follow the instructions in the Setup section b
 ## Setup ##
 1. Create and source a virtualenv. `python3 -m venv .venv && source .venv/bin/activate`
 2. Upgrade pip. `pip install --upgrade pip`
-3. Install dependencies. `pip install -r requirements.txt`
+3. Install dependencies. `pip install -r requirements/development.txt`
 4. Run tests to make sure everything is working. `make test`
 
 To run the interactive app:
 1. Start the Flask server. `make runserver`
-2. Navigate to localhost:5555
+2. Navigate to localhost:5000
 
 To see the notebooks:
 1. Start Jupyter notebook server. `jupyter notebook --port=8888`

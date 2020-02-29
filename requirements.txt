@@ -1,16 +1,4 @@
-Flask==1.1.1
-Flask-Cors==3.0.8
-bandit==1.6.2
-black==19.10b0
-flake8==3.7.9
-jupyter==1.0.0
-jupyter-contrib-nbextensions==0.5.1
-matplotlib==3.1.2
-mypy==0.761
-numpy==1.18.1
-pandas==0.25.3
-pytest==5.3.5
-scikit-learn==0.22.1
-six==1.14.0
-torch==1.4.0
-tqdm==4.42.0
+# Heroku looks at the root of the directory for requirements.txt by default so
+# this file is for Heroku. See the other requirements files in requirements/.
+
+-r requirements/heroku.txt
