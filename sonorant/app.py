@@ -3,7 +3,7 @@
 from operator import itemgetter
 
 from flask import Flask, jsonify, render_template, request
-
+from flask_caching import Cache
 from flask_cors import CORS
 
 from sonorant.languagemodel import LanguageModel
@@ -20,6 +20,7 @@ DEFAULT_MIN_PROB = 0.001
 def create_app():
     app = Flask(__name__)
     CORS(app)
+    cache = Cache(app, config={"CACHE_TYPE": "simple", "CACHE_THRESHOLD": int(1e6)})
 
     @app.route("/")
     def interactive_app():
@@ -29,6 +30,7 @@ def create_app():
         )
 
     @app.route("/next_probs")
+    @cache.cached(timeout=60 * 60 * 24 * 30, query_string=True)
     def next_probs():
         """Return a probability distribution over the vocabulary for the next phoneme.
 
