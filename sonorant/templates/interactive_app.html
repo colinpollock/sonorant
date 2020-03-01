@@ -163,7 +163,10 @@
                     title: { display: true, fontSize: 50 },
                     scales: {
                         yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Probability', fontSize: 15 } }],
-                        xAxes: [{ ticks: { fontSize: 20 }, scaleLabel: { display: true, labelString: 'Next Phoneme', fontSize: 15 } }]
+                        xAxes: [{
+                            ticks: { fontSize: 20, autoSkip: false },
+                            scaleLabel: { display: true, labelString: 'Next Phoneme', fontSize: 15 }
+                        }]
                     },
                     onClick: (event, activeElements) => {
                         // If the user doesn't click on one phoneme's bar then there's nothing to do.
