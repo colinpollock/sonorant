@@ -250,7 +250,7 @@
 
         /* Return a readable IPA string. */
         function makePronunciationString() {
-            return '/' + data.chosenPhonemes.join(' ') + '/'
+            return '/' + data.chosenPhonemes.join('') + '/'
         }
 
         document.getElementById('resetData').addEventListener('click', function () {
