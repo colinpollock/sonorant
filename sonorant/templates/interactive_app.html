@@ -83,8 +83,8 @@
         #buttons {
             display: flex;
             justify-content: center;
-            color: steelblue;
             padding-top: 2%;
+            color: steelblue;
         }
 
         button {
@@ -123,15 +123,20 @@
     <div id="buttons">
         <button id="resetData">Start Over</button>
         <button id="undoLast">Undo Last</button>
+        <button id="playAudio">Play Audio</button>
     </div>
 
     <div id="instructions">
         <div style="font-weight: bold">Construct novel English words, one phoneme at a time!</div>
         <div>
             <ul>
+                <li>Each phoneme is an English speech sound in IPA. Click <a href="http://www.ipachart.com/">here</a> to
+                    learn about IPA.
+                </li>
+                <li>Your current word shows up between //. It's empty until you click a bar.</li>
+                <li>The bars show how likely each phoneme is toc ome next, according to a language model (click About
+                    for more info).
                 <li>Click a bar to choose the next phoneme.</li>
-                <li>Your current word shows up between //.</li>
-                <li>The bars show how likely each phoneme is, according to a language model (click About for more info).
                 </li>
             </ul>
         </div>
@@ -149,7 +154,10 @@
                 borderWidth: 1,
                 data: []
             }],
-            chosenPhonemes: []
+            chosenPhonemes: [],
+
+            // The Audio for the current pronunciation, which is set after calling the server.
+            sound: null
         };
 
         window.onload = function () {
@@ -196,6 +204,7 @@
          * full word.
          */
         function presentDoneWord() {
+            playPronunciationAudio();
             alert("You made a word: " + makePronunciationString());
         }
 
@@ -208,18 +217,19 @@
         }
 
         /*
-         * Calls the language model service to get the distribution over the *next* phoneme.
-         * Returns a list of [phoneme, probability] pairs.
+         * Calls the language model service to get the distribution over the *next* phoneme and the
+         * audio for the current pronunciation.
          */
-        function getNextPhonemeDistribution(updateDisplayCallback) {
-            var soFarString = data.chosenPhonemes.join(' ');
-            var url = "{{ next_probs_endpoint }}" + encodeURI(soFarString);
+        function getNextPhonemeDistribution(updateDisplayCallback, setAndplayAudioCallback) {
+            var pronunciation = data.chosenPhonemes.join(' ');
+            var url = "{{ server_sync_endpoint }}" + encodeURI(pronunciation);
 
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
                     var response = JSON.parse(this.responseText);
-                    updateDisplayCallback(response);
+                    updateDisplayCallback(response.next_probabilities);
+                    setAndPlayAudio(response.audio)
                 }
             };
             xmlhttp.open("GET", url, true);
@@ -228,7 +238,8 @@
 
         /*
          * Calls the language model service to get the probability distribution over the vocabulary
-         * for the next phoneme in the sequence. The chart is then updated showing the distribution.
+         * for the next phoneme in the sequence and also the audio for the current pronunciation.
+         * The audio is then played and the chart is updated showing the new distribution.
          */
         function updateChartDisplay() {
             function updateDisplay(phonemeDistribution) {
@@ -245,7 +256,16 @@
                 window.chart.update();
             }
 
-            getNextPhonemeDistribution(updateDisplay);
+            getNextPhonemeDistribution(updateDisplay, setAndPlayAudio);
+        }
+
+        function setAndPlayAudio(b64audio) {
+            data.sound = new Audio("data:audio/wav;base64," + b64audio);
+            playPronunciationAudio();
+        }
+
+        function playPronunciationAudio() {
+            data.sound.play();
         }
 
         /* Return a readable IPA string. */
@@ -260,6 +280,10 @@
         document.getElementById('undoLast').addEventListener('click', function () {
             data.chosenPhonemes.pop();
             updateChartDisplay();
+        });
+
+        document.getElementById('playAudio').addEventListener('click', function () {
+            playPronunciationAudio();
         });
 
     </script>

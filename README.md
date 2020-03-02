@@ -15,7 +15,10 @@ If you want to run these examples follow the instructions in the Setup section b
 1. Create and source a virtualenv. `python3 -m venv .venv && source .venv/bin/activate`
 2. Upgrade pip. `pip install --upgrade pip`
 3. Install dependencies. `pip install -r requirements/development.txt`
-4. Run tests to make sure everything is working. `make test`
+4. Set environment variables for AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, for an AWS user that
+   has access to AmazonPollyReadOnlyAccess. Note that this will result in billable usage of AWS Polly,
+   even when just running unit tests since I haven't mocked it out.
+5. Run tests to make sure everything is working. `make test`
 
 To run the interactive app:
 1. Start the Flask server. `make runserver`

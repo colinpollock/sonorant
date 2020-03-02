@@ -7,6 +7,7 @@ from flask_caching import Cache
 from flask_cors import CORS
 
 from sonorant.languagemodel import LanguageModel
+from sonorant.polly import get_audio
 from sonorant.utils import truncate
 
 
@@ -24,27 +25,30 @@ def create_app():
 
     @app.route("/")
     def interactive_app():
-        next_probs_endpoint = f"next_probs?so_far="
+        server_sync_endpoint = f"server_sync?pronunciation="
         return render_template(
-            "interactive_app.html", next_probs_endpoint=next_probs_endpoint
+            "interactive_app.html", server_sync_endpoint=server_sync_endpoint
         )
 
-    @app.route("/next_probs")
+    @app.route("/server_sync")
     @cache.cached(timeout=60 * 60 * 24 * 30, query_string=True)
-    def next_probs():
+    def server_sync():
         """Return a probability distribution over the vocabulary for the next phoneme.
 
         Query parameters:
-        - so_far: a space-separated string of phonemes, each of which must be in the model's vocab.
+        - pronunciation_string: a space-separated string of phonemes, each of which must be in the
+          model's vocab.
         - min_probability: phonemes at or below this threshold won't be returned. Must be greater
           than zero (to avoid showing *everything*) and less than 1.
 
-        Returns: a JSON descended sorted list of [phoneme, probability] pairs.
+        Returns: a JSON object with two keys:
+        - next_probabilities: descended sorted list of [phoneme, probability] pairs.
+        - audio: a base64 encoded string of the audio of the current pronunciation
 
         Note that the returned probabilities are ints between 0 and 100 since those are easier to
         display in a chart.
         """
-        so_far = request.args.get("so_far")
+        pronunciation_string = request.args.get("pronunciation")
 
         try:
             min_prob = float(request.args.get("min_prob", DEFAULT_MIN_PROB))
@@ -55,7 +59,9 @@ def create_app():
             return "min_prob must be greater than 0 and less than or equal to 1", 400
 
         # Pronunciation is a tuple, so if the input string is empty it's an empty tuple
-        pronunciation = tuple(so_far.split(" ")) if so_far else ()
+        pronunciation = (
+            tuple(pronunciation_string.split(" ")) if pronunciation_string else ()
+        )
 
         try:
             next_probabilities = MODEL.next_probabilities(pronunciation)
@@ -67,11 +73,12 @@ def create_app():
             for (phoneme, prob) in next_probabilities.items()
             if prob > min_prob
         }
-
         sorted_probs = sorted(
             next_probabilities.items(), key=itemgetter(1), reverse=True
         )
 
-        return jsonify(sorted_probs)
+        audio_string = get_audio(pronunciation)
+
+        return jsonify({"next_probabilities": sorted_probs, "audio": audio_string})
 
     return app
