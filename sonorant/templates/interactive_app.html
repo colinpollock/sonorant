@@ -67,17 +67,17 @@
             width: 15%;
         }
 
-        canvas {
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-        }
-
         #chart {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 50%;
+        }
+
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
         }
 
         #buttons {
@@ -93,20 +93,48 @@
             border-radius: 40em;
         }
 
+        #created-pronunciations {
+            /* This starts off invisible, and is set to visible once a pronunciation is added. */
+            display: none;
+            padding-top: 2%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #created-pronunciations-copy {
+            font-weight: bold;
+        }
+
+        #created-pronunciations-list {
+            display: flex;
+            justify-content: flex-start;
+            list-style: none;
+        }
+
+        #created-pronunciations-list li {
+            display: inline;
+            padding-left: 1em;
+        }
+
         #instructions {
             display: flex;
             flex-direction: column;
             align-items: center;
             padding-top: 2%;
         }
+
+        #instructions-header {
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body id="content">
-
     <div id="header">
         <div id="site-info">
             <div id="site-title">Sonorant</div>
+            <!-- Note: the code refers to phoneme strings as pronunciations, which is more accurate since a word can have
+            multiple pronunciations. But the UI calls these "words" because I think it's more understandable. -->
             <div id="site-tagline">Make novel words in IPA</div>
         </div>
 
@@ -123,14 +151,22 @@
         <canvas id="canvas"></canvas>
     </div>
 
-    <div id="buttons">
-        <button id="resetData">Start Over</button>
+    <div id=buttons>
+        <button id="clearPhonemes">Start Over</button>
         <button id="undoLast">Undo Last</button>
         <button id="playAudio">Play Audio</button>
     </div>
 
+    <div id=created-pronunciations>
+        <div id=created-pronunciations-copy>
+            Words you've created:
+        </div>
+        <ol id=created-pronunciations-list>
+        </ol>
+    </div>
+
     <div id="instructions">
-        <div style="font-weight: bold">Construct novel English words, one phoneme at a time!</div>
+        <div id=instructions-header>Construct novel English words, one phoneme at a time! </div>
         <div>
             <ul>
                 <li>Each phoneme is an English speech sound in IPA. Click <a href="http://www.ipachart.com/">here</a> to
@@ -140,6 +176,7 @@
                 <li>The bars show how likely each phoneme is to come next, according to a language model (click About
                     for more info).
                 <li>Click a bar to choose the next phoneme.</li>
+                <li>Click the &lt;END&gt; bar to add the word to your created words list.</li>
                 </li>
             </ul>
         </div>
@@ -148,7 +185,6 @@
     <!-- TODO eventually: pull JS out and test it -->
     <script>
         const data = {
-            labels: [],
             // Chart.js expects data to be in a list called `datasets`, but I only have one dataset
             // so I just refer to data.datasets[0] throughought the code.
             datasets: [{
@@ -157,15 +193,63 @@
                 borderWidth: 1,
                 data: []
             }],
+
+            // The phoneme labels along the X-axis.
+            labels: [],
+
+            // The phonemes selected by the user.
             chosenPhonemes: [],
 
             // The Audio for the current pronunciation, which is set after calling the server.
-            sound: null
+            sound: null,
+
+            // Pronunciations the user has already finished creating.
+            createdPronunciations: []
         };
 
         window.onload = function () {
+            window.chart = createChart();
+
+            // The chart is initialized with an empty pronunciation unless the URL already has
+            // pronunciation in the location hash.
+            phonemes = getPhonemesFromHash();
+            data.chosenPhonemes = phonemes;
+            updateUI()
+        };
+
+        /* Creates a link for the current pronunciation in the created-pronunciations section. */
+        function displayCreatedPronunciation() {
+            var pronunciationLink = document.createElement('a');
+            pronunciationLink.href = '#' + makeLocationHash();
+            pronunciationLink.text = makePronunciationString(false, true);
+
+            var listItem = document.createElement('li');
+            listItem.appendChild(pronunciationLink);
+
+            var createdPronunciationsList = document.getElementById('created-pronunciations-list');
+            createdPronunciationsList.appendChild(listItem);
+
+            // This div starts off invisible, so make sure it's visible now that there's at least
+            // one created pronunciation.
+            var createdPronunciations = document.getElementById('created-pronunciations');
+            createdPronunciations.style.display = 'flex';
+        }
+
+        /* Return a list of phonemes, as parsed from the `phonemes` query param. */
+        function getPhonemesFromHash() {
+            var phonemeString = location.hash;
+
+            if (phonemeString) {
+                phonemeString = decodeURI(phonemeString);
+                return phonemeString.replace('#', '').split(' ');
+            } else {
+                return [];
+            }
+        }
+
+        function createChart() {
             var ctx = document.getElementById('canvas').getContext('2d');
-            window.chart = new Chart(ctx, {
+            return new Chart(ctx, {
                 type: 'bar',
                 data: data,
                 options: {
@@ -173,7 +257,7 @@
                     legend: { display: false, position: 'top' },
                     title: { display: true, fontSize: 50 },
                     scales: {
-                        yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Probability', fontSize: 15 } }],
+                        yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Probability * 100', fontSize: 15 } }],
                         xAxes: [{
                             ticks: { fontSize: 20, autoSkip: false },
                             scaleLabel: { display: true, labelString: 'Next Phoneme', fontSize: 15 }
@@ -188,43 +272,98 @@
                         var chosenPhoneme = data.labels[chosenPhonemeIndex]
 
                         if (chosenPhoneme == '<END>') {
-                            presentDoneWord();
-                            resetData();
+                            completePronunciation();
                         } else {
-                            data.chosenPhonemes.push(chosenPhoneme);
-                            updateChartDisplay();
+                            addPhoneme(chosenPhoneme);
                         }
                     }
                 }
             });
 
-            updateChartDisplay()
-        };
-
-        /*
-         * Present the final word to the user.
-         * Note this is just an alert right now, but will involve updating the chart to show the
-         * full word.
-         */
-        function presentDoneWord() {
-            playPronunciationAudio();
-            alert("You made a word: " + makePronunciationString());
         }
 
         /*
-         * Clear the chosen phonemes and redraw the chart.
+         * Add the new phoneme to the current pronunciation and update the location hash.
+         *
+         * Note that updating the location hash triggers the app to update.
          */
-        function resetData() {
+        function addPhoneme(phoneme) {
+            data.chosenPhonemes.push(phoneme);
+            updateHashLocation();
+        }
+
+        /*
+         * Remove the last phoneme current pronunciation and update the location hash.
+         *
+         * Note that updating the location hash triggers the app to update.
+         */
+        function removeLastPhoneme() {
+            data.chosenPhonemes.pop();
+            updateHashLocation();
+        }
+
+        /*
+         * Clear the current pronunciation and update the location hash.
+         *
+         * Note that updating the location hash triggers the app to update.
+         */
+        function clearPhonemes() {
             data.chosenPhonemes = [];
-            updateChartDisplay();
+            updateHashLocation();
+        }
+
+        /* Return a string that is the location hash representing the current pronunciation. */
+        function makeLocationHash() {
+            return makePronunciationString(true, false);
+        }
+
+        /* Update the location hash to match the current pronunciation. */
+        function updateHashLocation() {
+            location.hash = makeLocationHash();
+        }
+
+        /*
+         * Present the final pronunciation to the user.
+         *
+         * This plays audio for the pronunciation and puts it into the list of created pronunciations.
+         */
+        function completePronunciation() {
+            playPronunciationAudio();
+            data.createdPronunciations.push(data.chosenPhonemes);
+            displayCreatedPronunciation();
+        }
+
+        /*
+         * Calls the language model service to get the probability distribution over the vocabulary
+         * for the next phoneme in the sequence and also the audio for the current pronunciation.
+         * The audio is then played and the chart is updated showing the new distribution.
+         */
+        function updateUI() {
+            function updateDisplay(phonemeDistribution) {
+                data.labels = [];
+                data.datasets[0].data = [];
+
+                for (var i = 0; i < phonemeDistribution.length; i++) {
+                    [phoneme, probability] = phonemeDistribution[i];
+                    data.labels.push(phoneme);
+                    data.datasets[0].data.push(probability);
+                }
+
+                chart.options.title.text = makePronunciationString();
+                window.chart.update();
+            }
+
+            getNextPhonemeDistribution(updateDisplay);
         }
 
         /*
          * Calls the language model service to get the distribution over the *next* phoneme and the
          * audio for the current pronunciation.
+         *
+         * Note that this should probably not be called directly, but is called from updateUI.
          */
-        function getNextPhonemeDistribution(updateDisplayCallback, setAndplayAudioCallback) {
-            var pronunciation = data.chosenPhonemes.join(' ');
+        function getNextPhonemeDistribution(updateDisplayCallback) {
+            var pronunciation = makePronunciationString(true, false);
             var url = "{{ server_sync_endpoint }}" + encodeURI(pronunciation);
 
             var xmlhttp = new XMLHttpRequest();
@@ -239,29 +378,6 @@
             xmlhttp.send();
         }
 
-        /*
-         * Calls the language model service to get the probability distribution over the vocabulary
-         * for the next phoneme in the sequence and also the audio for the current pronunciation.
-         * The audio is then played and the chart is updated showing the new distribution.
-         */
-        function updateChartDisplay() {
-            function updateDisplay(phonemeDistribution) {
-                data.labels = [];
-                data.datasets[0].data = [];
-
-                for (var index in phonemeDistribution) {
-                    [phoneme, probability] = phonemeDistribution[index];
-                    data.labels.push(phoneme);
-                    data.datasets[0].data.push(probability);
-                }
-
-                chart.options.title.text = makePronunciationString();
-                window.chart.update();
-            }
-
-            getNextPhonemeDistribution(updateDisplay, setAndPlayAudio);
-        }
-
         function setAndPlayAudio(b64audio) {
             data.sound = new Audio("data:audio/wav;base64," + b64audio);
             playPronunciationAudio();
@@ -272,22 +388,31 @@
         }
 
         /* Return a readable IPA string. */
-        function makePronunciationString() {
-            return '/' + data.chosenPhonemes.join('') + '/'
+        function makePronunciationString(separateWithSpace = false, bracketWithSlashes = true) {
+            phonemeString = data.chosenPhonemes.join(separateWithSpace ? ' ' : '');
+            return bracketWithSlashes ? '/' + phonemeString + '/' : phonemeString;
         }
 
-        document.getElementById('resetData').addEventListener('click', function () {
-            resetData();
+        /* Updates the UI to match the pronunciation in the URL hash. */
+        function syncWithHash() {
+            phonemes = getPhonemesFromHash();
+            data.chosenPhonemes = phonemes;
+            updateUI();
+        }
+
+        document.getElementById('clearPhonemes').addEventListener('click', function () {
+            clearPhonemes();
         });
 
         document.getElementById('undoLast').addEventListener('click', function () {
-            data.chosenPhonemes.pop();
-            updateChartDisplay();
+            removeLastPhoneme()
         });
 
         document.getElementById('playAudio').addEventListener('click', function () {
             playPronunciationAudio();
         });
+
+        window.addEventListener("hashchange", syncWithHash, false);
 
     </script>
 </body>
