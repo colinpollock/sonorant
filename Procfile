@@ -1,1 +1,1 @@
-web: gunicorn "sonorant.app:create_app() -timeout 2"
+web: gunicorn "sonorant.app:create_app()"
