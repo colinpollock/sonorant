@@ -1,6 +1,6 @@
 Flask==1.1.1
 Flask-Caching==1.8.0
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 bandit==1.6.2
 black==19.10b0
 boto3==1.12.11
